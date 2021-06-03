@@ -157,10 +157,10 @@ room2:
 init:
 	mkdir src
 	git clone git@github.com:jeremyhahn/cropdroid-devops.git devops
-	git clone git@github.com:jeremyhahn/go-cropdroid.git src/
-	git clone git@github.com:jeremyhahn/cropdroid-room.git src/
-	git clone git@github.com:jeremyhahn/cropdroid-reservoir.git src/
-	git clone git@github.com:jeremyhahn/cropdroid-doser.git src/
+	git clone git@github.com:jeremyhahn/go-cropdroid.git src/go-cropdroid
+	git clone git@github.com:jeremyhahn/cropdroid-room.git src/cropdroid-room
+	git clone git@github.com:jeremyhahn/cropdroid-reservoir.git src/cropdroid-reservoir
+	git clone git@github.com:jeremyhahn/cropdroid-doser.git src/cropdroid-doser
 
 
 
