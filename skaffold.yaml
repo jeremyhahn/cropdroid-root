@@ -1,0 +1,127 @@
+apiVersion: skaffold/v2beta16
+kind: Config
+metadata:
+  name: cropdroid-dev
+build:
+  tagPolicy:
+    sha256: {}
+  local:
+    useBuildkit: true
+    concurrency: 0
+  artifacts:
+  
+  - image: builder-cropdroid-base-ubuntu
+    docker:
+      dockerfile: devops/docker/builder-base/Dockerfile-ubuntu
+    sync:
+      manual:
+      - src: 'devops/docker/builder-base/*'
+        dest: 'devops/docker/builder-base/'
+  
+  - image: builder-rocksdb-ubuntu
+    docker:
+      dockerfile: devops/docker/builder-rocksdb/Dockerfile-ubuntu
+      buildArgs:
+        CORES: 20
+    sync:
+      manual:
+      - src: 'devops/docker/builder-rocksdb/*'
+        dest: 'devops/docker/builder-rocksdb/'
+  
+  - image: builder-cockroachdb-ubuntu
+    docker:
+      dockerfile: devops/docker/builder-cockroachdb/Dockerfile-ubuntu
+      buildArgs:
+        CORES: 20
+    sync:
+      manual:
+      - src: 'devops/docker/builder-cockroachdb/*'
+        dest: 'devops/docker/builder-cockroachdb/'
+  
+  - image: builder-cropdroid-standalone-ubuntu
+    docker:
+      dockerfile: devops/docker/builder-cropdroid/Dockerfile-standalone
+      buildArgs:
+        CORES: 20
+    requires:
+    - image: builder-cropdroid-base-ubuntu
+      alias: BASE_IMAGE
+    sync:
+      manual:
+      - src: 'cropdroid-standalone'
+        dest: .
+
+  - image: builder-cropdroid-cluster-ubuntu
+    docker:
+      dockerfile: devops/docker/builder-cropdroid/Dockerfile-cluster
+      buildArgs:
+        CORES: 20
+    requires:
+    - image: builder-cropdroid-base-ubuntu
+      alias: BASE_IMAGE
+    - image: builder-rocksdb-ubuntu
+      alias: ROCKSDB_IMAGE
+    sync:
+      manual:
+      - src: 'cropdroid'
+        dest: .
+      
+  - image: cropdroid-standalone-ubuntu
+    docker:
+      dockerfile: devops/docker/cropdroid/Dockerfile-standalone-ubuntu
+      buildArgs:
+        CORES: 20
+        BASE_IMAGE: ubuntu:latest
+    requires:
+    - image: builder-cropdroid-standalone-ubuntu
+      alias: STANDALONE_BUILDER
+    sync:
+      manual:
+      - src: 'cropdroid-standalone'
+        dest: /opt/cropdroid/cropdroid
+  
+  - image: cropdroid-cluster-ubuntu
+    docker:
+      dockerfile: devops/docker/cropdroid/Dockerfile-cluster-ubuntu
+      buildArgs:
+        CORES: 20
+        BASE_IMAGE: ubuntu:latest
+    requires:
+    - image: builder-cropdroid-cluster-ubuntu
+      alias: CLUSTER_BUILDER
+    - image: builder-rocksdb-ubuntu
+      alias: ROCKSDB_IMAGE
+    sync:
+      manual:
+      - src: 'cropdroid'
+        dest: /opt/cropdroid/cropdroid
+
+  - image: cockroachdb-ubuntu
+    docker:
+      dockerfile: devops/docker/cockroachdb/Dockerfile-ubuntu
+      buildArgs:
+        CORES: 20
+        BASE_IMAGE: ubuntu:latest
+    requires:
+    - image: builder-cockroachdb-ubuntu
+      alias: COCKROACHDB_BUILDER
+    sync:
+      manual:
+      - src: 'devops/docker/builder-cockroachdb/*'
+        dest: 'devops/docker/builder-cockroachdb/'
+deploy:
+  kustomize:
+    paths:
+    - devops/kubernetes/cluster-local/overlays/dev
+    - devops/kubernetes/standalone-local/overlays/dev
+profiles:
+- name: base
+  deploy:
+    kustomize:
+      paths:
+      - devops/kubernetes/cluster-local/base
+- name: prod
+  deploy:
+    kustomize:
+      paths:
+      - devops/kubernetes/cluster-local/overlays/prod
