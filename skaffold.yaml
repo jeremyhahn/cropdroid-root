@@ -35,11 +35,24 @@ build:
     - image: builder-cropdroid-base-ubuntu
       alias: BASE_IMAGE
 
-  - image: builder-cropdroid-cluster-ubuntu
+  - image: builder-cropdroid-cluster-pebble-ubuntu
     docker:
       dockerfile: devops/docker/builder-cropdroid/Dockerfile-cluster
       buildArgs:
         CORES: 20
+        CLUSTER_DB: pebble
+    requires:
+    - image: builder-cropdroid-base-ubuntu
+      alias: BASE_IMAGE
+    - image: builder-rocksdb-ubuntu
+      alias: ROCKSDB_IMAGE
+
+  - image: builder-cropdroid-cluster-rocksdb-ubuntu
+    docker:
+      dockerfile: devops/docker/builder-cropdroid/Dockerfile-cluster
+      buildArgs:
+        CORES: 20
+        CLUSTER_DB: rocksdb
     requires:
     - image: builder-cropdroid-base-ubuntu
       alias: BASE_IMAGE
@@ -60,14 +73,80 @@ build:
       - src: 'cropdroid-standalone'
         dest: /opt/cropdroid/cropdroid
   
-  - image: cropdroid-cluster-ubuntu
+  - image: cropdroid-cluster-pebble-ubuntu
     docker:
       dockerfile: devops/docker/cropdroid/Dockerfile-cluster-ubuntu
       buildArgs:
         CORES: 20
         BASE_IMAGE: ubuntu:latest
+        CLUSTER_DB: pebble
     requires:
-    - image: builder-cropdroid-cluster-ubuntu
+    - image: builder-cropdroid-cluster-pebble-ubuntu
+      alias: CLUSTER_BUILDER
+    - image: builder-rocksdb-ubuntu
+      alias: ROCKSDB_IMAGE
+    sync:
+      manual:
+      - src: 'cropdroid'
+        dest: /opt/cropdroid/cropdroid
+
+  - image: cropdroid-cluster-rocksdb-ubuntu
+    docker:
+      dockerfile: devops/docker/cropdroid/Dockerfile-cluster-ubuntu
+      buildArgs:
+        CORES: 20
+        BASE_IMAGE: ubuntu:latest
+        CLUSTER_DB: rocksdb
+    requires:
+    - image: builder-cropdroid-cluster-pebble-ubuntu
+      alias: CLUSTER_BUILDER
+    - image: builder-rocksdb-ubuntu
+      alias: ROCKSDB_IMAGE
+    sync:
+      manual:
+      - src: 'cropdroid'
+        dest: /opt/cropdroid/cropdroid
+
+  - image: cropdroid-standalone-alpine
+    docker:
+      dockerfile: devops/docker/cropdroid/Dockerfile-standalone-alpine
+      buildArgs:
+        CORES: 20
+        BASE_IMAGE: alpine:latest
+    requires:
+    - image: builder-cropdroid-standalone-ubuntu
+      alias: STANDALONE_BUILDER
+    sync:
+      manual:
+      - src: 'cropdroid-standalone'
+        dest: /opt/cropdroid/cropdroid
+
+  - image: cropdroid-cluster-pebble-alpine
+    docker:
+      dockerfile: devops/docker/cropdroid/Dockerfile-cluster-alpine
+      buildArgs:
+        CORES: 20
+        BASE_IMAGE: alpine:latest
+        CLUSTER_DB: pebble
+    requires:
+    - image: builder-cropdroid-cluster-pebble-ubuntu
+      alias: CLUSTER_BUILDER
+    - image: builder-rocksdb-ubuntu
+      alias: ROCKSDB_IMAGE
+    sync:
+      manual:
+      - src: 'cropdroid'
+        dest: /opt/cropdroid/cropdroid
+
+  - image: cropdroid-cluster-rocksdb-alpine
+    docker:
+      dockerfile: devops/docker/cropdroid/Dockerfile-cluster-alpine
+      buildArgs:
+        CORES: 20
+        BASE_IMAGE: alpine:latest
+        CLUSTER_DB: rocksdb
+    requires:
+    - image: builder-cropdroid-cluster-pebble-ubuntu
       alias: CLUSTER_BUILDER
     - image: builder-rocksdb-ubuntu
       alias: ROCKSDB_IMAGE
@@ -86,12 +165,23 @@ build:
     - image: builder-cockroachdb-ubuntu
       alias: COCKROACHDB_BUILDER
 
+  # - image: cropdroid-cockroachdb-alpine
+  #   docker:
+  #     dockerfile: devops/docker/cockroachdb/Dockerfile-alpine
+  #     buildArgs:
+  #       CORES: 20
+  #       BASE_IMAGE: alpine:latest
+  #   requires:
+  #   - image: builder-cockroachdb-ubuntu
+  #     alias: COCKROACHDB_BUILDER
+
 deploy:
   kustomize:
     paths:
     - devops/kubernetes/cockroachdb-default/base
-    - devops/kubernetes/cropdroid-cluster/overlays/dev
-    - devops/kubernetes/cropdroid-standalone/overlays/dev
+    #- devops/kubernetes/cropdroid-cluster/overlays/dev
+    - devops/kubernetes/cropdroid-cluster/overlays/dev-cockroachdb
+    #- devops/kubernetes/cropdroid-standalone/overlays/dev
 
 profiles:
 - name: base
@@ -106,12 +196,11 @@ profiles:
       - devops/kubernetes/cluster-local/overlays/prod
 
 portForward:
-- resourceType: deployment
+- resourceType: Service
   resourceName: cockroachdb
   port: 8080
   localPort: 8080
-- resourceType: service
-  resourceName: cropdroid
-  namespace: cropdroid-cluster
+- resourceType: Service
+  resourceName: cropdroid-lb-0
   port: 80
   localPort: 80

@@ -48,7 +48,7 @@ FIRMWARE_STAGE          ?= artifacts/firmware
 BOOTLOADER_STAGE        ?= artifacts/bootloaders
 IMAGES_HOME             ?= $(DEVOPS_HOME)/images
 DEPLOY_HOME             ?= /opt/$(APP)
-SCRIPTS                 ?= $(DEVOPS_HOME)/scripts
+SCRIPTS_HOME            ?= $(DEVOPS_HOME)/scripts
 
 # Required by Ansible playbook and Packer builds
 AWS_ACCESS_KEY_ID      ?=
@@ -62,10 +62,10 @@ DOCKER_REGISTRY          ?= docker.io
 DOCKER_USERNAME          ?= jeremyhahn
 DOCKER_PASSWORD          ?= 
 DOCKER_EMAIL             ?= root@localhost
-DOCKER_SUBNET            ?= 172.17.0.0/16
-DOCKER_NODE1_IP          ?= 172.17.0.10
-DOCKER_NODE2_IP          ?= 172.17.0.11
-DOCKER_NODE3_IP          ?= 172.17.0.12
+DOCKER_SUBNET            ?= 172.18.0.0/16
+DOCKER_NODE1_IP          ?= 172.18.0.10
+DOCKER_NODE2_IP          ?= 172.18.0.11
+DOCKER_NODE3_IP          ?= 172.18.0.12
 DOCKER_OS                ?= ubuntu
 DOCKER_OS_TAG		     ?= latest
 DOCKER_IMAGE             ?= $(DOCKER_OS):$(DOCKER_OS_TAG)
@@ -308,7 +308,7 @@ ifdef DOCKER_PUSH
 	DOCKER_IMAGE=cropdroid-cluster-rocksdb-alpine $(MAKE) docker-local
 endif
 
-docker-build-cockroachdb:
+docker-build-cockroachdb-ubuntu:
 	docker build \
 		--build-arg CORES=$(CORES) \
 		--build-arg BASE_IMAGE=$(DOCKER_IMAGE) \
@@ -353,7 +353,7 @@ docker-build-cropdroid-alpine: docker-build-cropdroid-standalone-alpine \
 
 docker-build-all: docker-build-base \
 	docker-build-builders \
-	docker-build-cockroachdb \
+	docker-build-cockroachdb-ubuntu \
 	docker-build-cropdroid \
 	docker-build-cropdroid-alpine
 
@@ -482,7 +482,7 @@ docker-buildx-cropdroid-cluster-rocksdb-alpine:
 		-t $(DOCKER_BUILDX_TAG_PREFIX)cropdroid-cluster-rocksdb-alpine \
 		-f $(DOCKER_HOME)/cropdroid/Dockerfile-cluster-alpine .
 
-docker-buildx-cockroachdb:
+docker-buildx-cockroachdb-ubuntu:
 	docker buildx build \
 		--build-arg CORES=$(CORES) \
 		--build-arg BASE_IMAGE=$(DOCKER_IMAGE) \
@@ -514,7 +514,7 @@ docker-buildx-cropdroid-cluster-alpine: docker-buildx-cropdroid-cluster-pebble-a
 
 docker-buildx-all: docker-buildx-base \
 	docker-buildx-builders \
-	docker-buildx-cockroachdb \
+	docker-buildx-cockroachdb-ubuntu \
 	docker-buildx-cropdroid	\
 	docker-buildx-cropdroid-alpine
 
@@ -618,21 +618,24 @@ k8s-redeploy-cropdroid-cluster: k8s-delete-cropdroid-cluster \
 
 k8s-deploy-cockroachdb:
 	#kubectl create namespace cockroachdb-default
-	#kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
-	#kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/operator.yaml
-	#kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/cluster.yaml
-	kubectl apply -k $(DEVOPS_HOME)/kubernetes/cockroachdb-default/overlays/dev
-	kubectl port-forward service/cockroachdb-public 8080 &
+	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
+	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/operator.yaml
+	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/cluster.yaml
+	
+	#kubectl apply -k $(DEVOPS_HOME)/kubernetes/cockroachdb-default/overlays/dev
+	#kubectl port-forward service/cockroachdb-public 8080 &
 
 k8s-deploy-cockroachdb-crdb:
 	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
 
 k8s-delete-cockroachdb:
-	#kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
-	#kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/operator.yaml
-	#kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/cluster.yaml
-	kubectl delete -k $(DEVOPS_HOME)/kubernetes/cockroachdb-default/overlays/dev
+	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
+	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/operator.yaml
+	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/cluster.yaml
+	
+	#kubectl delete -k $(DEVOPS_HOME)/kubernetes/cockroachdb-default/overlays/dev
 	#kubectl delete namespace cockroachdb-default
+
 	$(MAKE) k8s-delete-cockroachdb-pvc
 
 k8s-delete-cockroachdb-pvc:
@@ -642,6 +645,22 @@ k8s-delete-cockroachdb-pvc:
 
 k8s-redeploy-cockroachdb: k8s-delete-cockroachdb \
 	k8s-deploy-cockroachdb
+
+
+k8s-port-forward-cockroachdb:
+	kubectl port-forward service/cockroachdb-public 8080
+
+k8s-clean:
+	-kubectl delete pvc --all
+	-kubectl delete pv --all
+
+
+
+cockroach-sql:
+	kubectl exec -it cockroachdb-2 -- ./cockroach sql --certs-dir cockroach-certs
+
+cockroach-admin-setup:
+	CREATE USER roach WITH PASSWORD 'cropdroid';
 
 
 
@@ -787,7 +806,7 @@ ansible-artifacts: ansible-artifacts-common \
 	$(MAKE) clean
 
 ansible-clean:
-	rm -rf $(ANSIBLE_CROPDROID_FILES)/cropdroid-*
+	rm -rf $(ANSIBLE_CROPDROID_FILES)/*
 
 
 
@@ -922,7 +941,7 @@ qemu-ubuntu-aarch64:
 
 
 qemu-cluster:
-	$(SCRIPTS)/qemu-cluster.sh
+	$(SCRIPTS_HOME)/qemu-cluster.sh
 
 # qemu:
 # 	qemu-system-arm \
@@ -983,10 +1002,15 @@ docker-network-clean:
 #	- docker stop cropdroid-$(APPTYPE)
 #	- docker rm -f cropdroid-$(APPTYPE)
 
-docker-cropdroid-cluster-clean:
-	- docker stop cropdroid-d1-n1 cropdroid-d1-n2 cropdroid-d1-n3
-	- docker rm -f cropdroid-d1-n1 cropdroid-d1-n2 cropdroid-d1-n3
-	- tmux kill-server
+docker-run-init:
+	#-v "${PWD}/cropdroid-data/cropdroid-0-0:/cropdroid-data"
+	#-v "${PWD}/keys:/keys"
+	docker run -d \
+		--name=cropdroid-init \
+		--hostname=cropdroid-init \
+		--net=cropnet \
+		-p 8091:8091 \
+		$(CROPDROID_SRC)/cropdroid config --init --debug --datastore cockroach --datastore-host roach1
 
 docker-run-cockroachdb-cluster:
 	#docker network create -d bridge cropnet
@@ -1015,38 +1039,22 @@ docker-run-cockroachdb-cluster:
 		cockroachdb/cockroach start \
 		--insecure \
 		--join=roach1,roach2,roach3
-	docker exec -it roach1 ./cockroach init --insecure
-	./$(APP) config --init --datastore cockroach
-	docker exec -it roach1 ./cockroach sql --insecure
+	#docker exec -it roach1 ./cockroach init --insecure
+	#./$(APP) config --init --datastore cockroach
+	#docker exec -it roach1 ./cockroach sql --insecure
 
-docker-cockroachdb-log:
-	docker logs roach1
-
-docker-cockroachdb-clean:
-	docker stop roach1 roach2 roach3
-	docker rm roach1 roach2 roach3
-	sudo rm -rf db/cockroach-data/*
-
-docker-cluster-init:
-	#-v "${PWD}/cropdroid-data/cropdroid-d1-n1:/cropdroid-data"
+docker-run-cropdroid-cluster-pebble:
+	#-v "${PWD}/cropdroid-data/cropdroid-0-0:/cropdroid-data"
 	#-v "${PWD}/keys:/keys"
+	
 	docker run -d \
-		--name=cropdroid-init \
-		--hostname=cropdroid-init \
-		--net=cropnet \
-		-p 8091:8091 \
-		cropdroid /cropdroid config --init --debug --datastore cockroach --datastore-host roach1
-
-docker-run-cropdroid-cluster:
-	#-v "${PWD}/cropdroid-data/cropdroid-d1-n1:/cropdroid-data"
-	#-v "${PWD}/keys:/keys"
-	docker run -d \
-		--name=cropdroid-d1-n1 \
-		--hostname=cropdroid-d1-n1 \
+		--name=cropdroid-0-0 \
+		--hostname=cropdroid-0-0 \
 		--ip $(DOCKER_NODE1_IP) \
 		--net=cropnet \
 		-p 8091:8091 \
-		cropdroid-cluster $(DEPLOY_HOME)/cropdroid cluster --debug \
+		$(DOCKER_BUILD_TAG_PREFIX)cropdroid-cluster-pebble-$(DOCKER_OS) $(DEPLOY_HOME)/cropdroid cluster \
+			--debug \
 			--ssl=false \
 			--port 8091 \
 			--datastore cockroach \
@@ -1055,12 +1063,13 @@ docker-run-cropdroid-cluster:
 			--listen $(DOCKER_NODE1_IP) \
 			--raft "$(DOCKER_NODE1_IP):60020,$(DOCKER_NODE2_IP):60021,$(DOCKER_NODE3_IP):60022"
 	docker run -d \
-		--name=cropdroid-d1-n2 \
-		--hostname=cropdroid-d1-n2 \
+		--name=cropdroid-0-1 \
+		--hostname=cropdroid-0-1 \
 		--ip $(DOCKER_NODE2_IP) \
 		--net=cropnet \
 		-p 8092:8092 \
-		cropdroid-cluster $(DEPLOY_HOME)/cropdroid cluster --debug \
+		$(DOCKER_BUILD_TAG_PREFIX)cropdroid-cluster-pebble-$(DOCKER_OS) $(DEPLOY_HOME)/cropdroid cluster \
+			--debug \
 			--ssl=false \
 			--port 8092 \
 			--datastore cockroach \
@@ -1072,12 +1081,13 @@ docker-run-cropdroid-cluster:
 			--raft "$(DOCKER_NODE1_IP):60020,$(DOCKER_NODE2_IP):60021,$(DOCKER_NODE3_IP):60022" \
 			--raft-port 60021
 	docker run -d \
-		--name=cropdroid-d1-n3 \
-		--hostname=cropdroid-d1-n3 \
+		--name=cropdroid-0-2 \
+		--hostname=cropdroid-0-2 \
 		--ip $(DOCKER_NODE3_IP) \
 		--net=cropnet \
 		-p 8093:8093 \
-		cropdroid-cluster $(DEPLOY_HOME)/cropdroid cluster --debug \
+		$(DOCKER_BUILD_TAG_PREFIX)cropdroid-cluster-pebble-$(DOCKER_OS) $(DEPLOY_HOME)/cropdroid cluster \
+			--debug \
 			--ssl=false \
 			--port 8093 \
 			--datastore cockroach \
@@ -1088,29 +1098,16 @@ docker-run-cropdroid-cluster:
 			--gossip-port 60012 \
 			--raft "$(DOCKER_NODE1_IP):60020,$(DOCKER_NODE2_IP):60021,$(DOCKER_NODE3_IP):60022" \
 			--raft-port 60022
-	$(SCRIPTS)/docker-cluster-tmux.sh
+	$(SCRIPTS_HOME)/docker-cluster-tmux.sh
 
-docker-run-cluster: docker-run-cockroachdb-cluster docker-run-cropdroid-cluster
-
-# Need to refactor build tags / naming conflicts so cluster binaries can also run standalone
-#docker-cropdroid-cluster-standalone:
-#	docker run -d \
-#		--name=cropdroid-cluster-standalone \
-#		--hostname=cropdroid-cluster-standalone \
-#		--ip $(DOCKER_NODE3_IP) \
-#		--net=cropnet \
-#		-p 8093:8093 \
-#		-v "${PWD}/cropdroid-data/cropdroid-cluster-standalone:/cropdroid-data" \
-#		-v "${PWD}/keys:/keys" \
-#		cropdroid /cropdroid cluster --debug \
-#			--data-dir /cropdroid-data \
-#			--log-dir / \
-#			--log-file /cropdroid.log \
-#			--keys /keys \
-#			--ssl=false \
-#			--port 8093 \
-#			--datastore memory \
-#			--enable-registrations
+docker-run-cluster-pebble: 
+	cd $(CROPDROID_SRC) && \
+		make build-cluster-pebble-debug-static
+	$(MAKE) docker-build-base \
+		docker-build-builder-cropdroid-cluster-pebble \
+		docker-build-cropdroid-cluster-pebble
+	$(MAKE) docker-run-cockroachdb-cluster \
+		docker-run-cropdroid-cluster-pebble
 
 docker-run-cropdroid-standalone:
 	docker run -d \
@@ -1121,7 +1118,8 @@ docker-run-cropdroid-standalone:
 		-p 8091:8091 \
 		-v "${PWD}/cropdroid-data/cropdroid:/cropdroid-data" \
 		-v "${PWD}/keys:/keys" \
-		cropdroid-standalone $(DEPLOY_HOME)/$(APP) standalone --debug \
+		$(DOCKER_BUILD_TAG_PREFIX)cropdroid-standalone-$(DOCKER_OS) $(DEPLOY_HOME)/$(APP) standalone \
+			--debug \
 			--data-dir /cropdroid-data \
 			--log-dir / \
 			--log-file /cropdroid.log \
@@ -1129,6 +1127,21 @@ docker-run-cropdroid-standalone:
 			--ssl=false \
 			--port 8091 \
 			--enable-registrations
+
+docker-run-cropdroid-cluster-clean:
+	- docker stop cropdroid-0-0 cropdroid-0-1 cropdroid-0-2
+	- docker rm -f cropdroid-0-0 cropdroid-0-1 cropdroid-0-2
+	- docker stop roach1 roach2 roach3
+	- docker rm -f roach1 roach2 roach3
+	- tmux kill-server
+
+docker-cockroachdb-log:
+	docker logs roach1
+
+docker-cockroachdb-clean:
+	docker stop roach1 roach2 roach3
+	docker rm roach1 roach2 roach3
+	sudo rm -rf db/cockroach-data/*
 
 
 
@@ -1138,8 +1151,69 @@ k3s-dashbaord:
 	$(BROWSER) https://$(TARGET_HOST):32637/#/overview?namespace=default
 
 
-cockroach-sql:
-	kubectl exec -it cockroachdb-2 -- ./cockroach sql --certs-dir cockroach-certsls
 
-cockroach-admin-setup:
-	CREATE USER roach WITH PASSWORD 'cropdroid';
+# ------------------------ #
+# Local development system #
+# ------------------------ #
+local-init-log:
+	sudo touch /var/log/cropdroid.log && sudo chmod 777 /var/log/cropdroid.log
+	sudo mkdir -p /var/log/cropdroid/cluster
+	sudo touch /var/log/cropdroid/cluster/node-1.log && sudo chmod 777 /var/log/cropdroid/cluster/node-1.log
+	sudo touch /var/log/cropdroid/cluster/node-2.log && sudo chmod 777 /var/log/cropdroid/cluster/node-2.log
+	sudo touch /var/log/cropdroid/cluster/node-3.log && sudo chmod 777 /var/log/cropdroid/cluster/node-3.log
+
+# local-init-cluster:
+# 	set -e ; \
+# 	FILES="/var/log/$(APP)-1.log /var/log/$(APP)-2.log /var/log/$(APP)-3.log" ; \
+# 	sudo touch $$FILES ; \
+# 	sudo chown $(USER) $$FILES
+
+local-init-cockroachdb:
+	$(CROPDROID_SRC)/cropdroid config --init --debug --datastore cockroach
+
+local-cropdroid-cluster-pebble:
+	cd $(CROPDROID_SRC) && \
+		make build-cluster-pebble-debug-static
+	$(MAKE) local-cluster-cockroachdb 
+	cp -R $(CROPDROID_SRC)/public_html .
+	#$(SCRIPTS_HOME)/start-cluster.sh
+	$(SCRIPTS_HOME)/start-cluster-tmux.sh
+
+local-cropdroid-cluster-rockdb: build-cluster-pebble-debug
+	#$(SCRIPTS_HOME)/start-cluster.sh
+	$(SCRIPTS_HOME)/start-cluster-tmux.sh
+
+local-cluster-cockroachdb:
+	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
+	$(MAKE) local-init-cockroachdb
+
+devclusterdebug: build-amd64-cluster-debug
+	$(SCRIPTS_HOME)/start-cluster-debug.sh
+
+local-roach-cluster:
+	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
+
+local-standalone:
+	./$(APP) standalone --debug --ssl=false --port 8091
+
+local-standalone-sqlite:
+	./$(APP) standalone --debug --ssl=false --port 8091 --datastore sqlite
+
+local-standalone-cockroach:
+	./$(APP) standalone --debug --ssl=false --port 8091 --datastore cockroach
+
+local-clean:
+	-killall cockroach
+	-killall $(APP)*
+	-tmux kill-server
+	-rm -rf db/
+	-rm -rf public_html/
+	-rf -rf example-data/
+
+local-redeploy-cropdroid-cluster-pebble: local-clean \
+	local-cropdroid-cluster-pebble
+	#killall cockroach
+	#killall $(APP)*
+	#tmux kill-server
+	#rm -rf db/
+	#$(MAKE) local-cropdroid-cluster-pebble
