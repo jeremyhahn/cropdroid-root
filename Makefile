@@ -16,10 +16,6 @@ GOBIN                   := $(shell dirname `which go`)
 
 CROPDROID_SRC           ?= src/go-cropdroid
 CROPDROID_DATASTORE     ?= memory
-CROPDROID_VERSION       ?= $(shell git describe --tags --abbrev=0)
-GIT_TAG                 = $(shell git describe --tags)
-GIT_HASH                = $(shell git rev-parse HEAD)
-BUILD_DATE              = $(shell date '+%y-%m-%d_%H:%M:%S')
 
 APP                     := cropdroid
 APPTYPE					?= standalone
@@ -40,6 +36,18 @@ WLAN_SSID               ?= MJ_5G
 WLAN_PSK                ?= Westland1
 WLAN_KEY_MGMT           ?= WPA-PSK
 WLAN_COUNTRY            ?= US
+
+CLUSTER_PEER1           ?= cropdroid-c1-n0
+CLUSTER_PEER2           ?= cropdroid-c1-n1
+CLUSTER_PEER3           ?= cropdroid-c1-n2
+CLUSTER_RAFT_PORT       ?= 60020
+CLUSTER_RAFT_PEERS      ?= $(CLUSTER_PEER1):$(CLUSTER_RAFT_PORT),$(CLUSTER_PEER2):$(CLUSTER_RAFT_PORT),$(CLUSTER_PEER3):$(CLUSTER_RAFT_PORT)
+CLUSTER_GOSSIP_PORT     ?= 60010
+CLUSTER_GOSSIP_PEERS    ?= $(CLUSTER_PEER1):$(CLUSTER_GOSSIP_PORT),$(CLUSTER_PEER2):$(CLUSTER_GOSSIP_PORT),$(CLUSTER_PEER3):$(CLUSTER_GOSSIP_PORT)
+
+COCKROACHDB_LISTEN_ADDR ?= localhost:26257
+COCKROACHDB_HTTP_PORT   ?= $(CLUSTER_PEER1):8080
+COCKROACHDB_JOIN_FLAG   ?= $(CLUSTER_PEER1):26257,$(CLUSTER_PEER2):26257,$(CLUSTER_PEER3):26257
 
 SOURCES                 ?= $(HOME)/sources
 DEVOPS_HOME             ?= $(PWD)/devops
@@ -102,14 +110,16 @@ RPI_KERNEL              ?= $(SOURCES)/qemu-rpi-kernel
 RPI_IMAGE_ARTIFACT      ?= $(IMAGES_HOME)/$(IMAGE_FILENAME)
 RPI_SDCARD              ?= /dev/sda
 
-LDFLAGS=-X github.com/jeremyhahn/$(APP)/app.Image=${IMAGE_NAME}
-LDFLAGS+= -X github.com/jeremyhahn/$(APP)/app.Environment=${ENV}
-LDFLAGS+= -X github.com/jeremyhahn/$(APP)/app.Release=${CROPDROID_VERSION}
-LDFLAGS+= -X github.com/jeremyhahn/$(APP)/app.GitHash=${GIT_HASH}
-LDFLAGS+= -X github.com/jeremyhahn/$(APP)/app.GitTag=${GIT_TAG}
-LDFLAGS+= -X github.com/jeremyhahn/$(APP)/app.BuildUser=${USER}
-LDFLAGS+= -X github.com/jeremyhahn/$(APP)/app.BuildDate=${BUILD_DATE}
 
+
+# Performance testing
+API_ENDPOINT         ?= http://localhost:8091
+API_JWT_TOKEN        ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6NTY2OTkyNDk5MzcwMDY1OTIxLCJlbWFpbCI6ImFkbWluIiwib3JnYW5pemF0aW9ucyI6Ilt7XCJpZFwiOjAsXCJuYW1lXCI6XCJcIixcImZhcm1zXCI6W3tcImlkXCI6NTY2OTkyNDk5NTU2MzE5MjMzLFwibmFtZVwiOlwiRmlyc3QgUm9vbVwiLFwicm9sZXNcIjpudWxsfV0sXCJyb2xlc1wiOltcImFkbWluXCJdLFwibGljZW5zZVwiOm51bGx9XSIsImV4cCI6MTYyNDcwODg2NCwiaWF0IjoxNTkzMTUxMjY0LCJpc3MiOiJjcm9wZHJvaWQifQ.DdjuBzLrh240cbgyqGi5f65UjjVFvMCtnNsIv5NUS81EnHlfk_wtz-xu5Yd5wDLIcMjEBwjSLJfWWBeIdEWtrwzH0sibqHE0xDTxCENRNAQ6uQitzxkARgvT--E27CFPmLmiJDyvsxe9e45CbkICB6yC-xBR5cpLAEUEGk9kEKPU2Phv29R3s-iIUYOuSqoFJ9cDFkc_09Pbmzd5oQnn4YN8AVsWRHkrIStwOv_TKajHhcdbCOe7AICn3CuobJmFyAMn3tmgOJ5u0gdMch0m1mu45ERxGGnfqls-IbyU0f6ISan6F5yrRA6UjCz7MTDxNn_KJLf8VGpE6JXyEGvjEQ
+API_FARM_ID          ?= 1
+API_SYSTEM_ENDPOINT  ?= $(API_ENDPOINT)/system
+API_STATE_ENDPOINT   ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/state
+API_CONFIG_ENDPOINT  ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/config
+API_DEVICES_ENDPOINT ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/devices
 
 
 default: minikube-start build-images
@@ -617,24 +627,27 @@ k8s-redeploy-cropdroid-cluster: k8s-delete-cropdroid-cluster \
 
 
 k8s-deploy-cockroachdb:
-	#kubectl create namespace cockroachdb-default
-	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
-	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/operator.yaml
-	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/cluster.yaml
+	#kubectl create namespace cockroachdb-operator
+	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/crdb.cockroachlabs.com_crdbclusters.yaml
+	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/operator.yaml
+	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/cluster.yaml
 	
-	#kubectl apply -k $(DEVOPS_HOME)/kubernetes/cockroachdb-default/overlays/dev
+	#kubectl apply -k $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/overlays/dev
 	#kubectl port-forward service/cockroachdb-public 8080 &
 
 k8s-deploy-cockroachdb-crdb:
-	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
+	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/crdb.cockroachlabs.com_crdbclusters.yaml
+
+k8s-delete-cockroachdb-crdb:
+	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/crdb.cockroachlabs.com_crdbclusters.yaml
 
 k8s-delete-cockroachdb:
-	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/crdb.cockroachlabs.com_crdbclusters.yaml
-	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/operator.yaml
-	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-default/base/cluster.yaml
+	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/crdb.cockroachlabs.com_crdbclusters.yaml
+	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/operator.yaml
+	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/cluster.yaml
 	
-	#kubectl delete -k $(DEVOPS_HOME)/kubernetes/cockroachdb-default/overlays/dev
-	#kubectl delete namespace cockroachdb-default
+	#kubectl delete -k $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/overlays/dev
+	#kubectl delete namespace cockroachdb-operator
 
 	$(MAKE) k8s-delete-cockroachdb-pvc
 
@@ -656,11 +669,24 @@ k8s-clean:
 
 
 
+k3s-set-context:
+	kubectl config set-context cropdroid-1
+
+k3s-deploy-cropdroid: k3s-set-context \
+	k8s-deploy-cockroachdb-crdb
+	kubectl apply -k $(DEVOPS_HOME)/kubernetes/cropdroid-cluster/overlays/raspi
+
+k3s-delete-cropdroid: k3s-set-context
+#	k8s-delete-cockroachdb-pvc
+	kubectl delete -k $(DEVOPS_HOME)/kubernetes/cropdroid-cluster/overlays/raspi
+
+
+
 cockroach-sql:
 	kubectl exec -it cockroachdb-2 -- ./cockroach sql --certs-dir cockroach-certs
 
 cockroach-admin-setup:
-	CREATE USER roach WITH PASSWORD 'cropdroid';
+	CREATE USER root WITH PASSWORD 'cropdroid';
 
 
 
@@ -770,11 +796,17 @@ ansible: ansible-rsync
 		-e appenv=$(ENV) \
 		-e hostname=$(TARGET_HOST) \
 		-e cropdroid_home=$(DEPLOY_HOME) \
+		-e cropdroid_binary=cropdroid-$(APPTYPE)-arm64 \
 		-e wlan_ssid=$(WLAN_SSID) \
 		-e wlan_psk=$(WLAN_PSK) \
 		-e wlan_key_mgmt=$(WLAN_KEY_MGMT) \
 		-e wlan_country=$(WLAN_COUNTRY) \
-		-e datastore=$(CROPDROID_DATASTORE)
+		-e datastore=$(CROPDROID_DATASTORE) \
+		-e "gossip_peers=$(CLUSTER_GOSSIP_PEERS)" \
+		-e "raft_peers=$(CLUSTER_RAFT_PEERS)" \
+		-e "cockroachdb_peers=$(COCKROACHDB_JOIN_FLAG)" \
+		-e owner=$(WEBSERVER_USER) \
+		-e group=$(TARGET_USER)
 
 ansible-rsync:
 	rsync -avr -e "ssh -l $(TARGET_USER)" $(DEVOPS_HOME)/ansible/* $(TARGET_USER)@$(TARGET_HOST):ansible
@@ -786,27 +818,32 @@ ansible-artifacts-common:
 
 ansible-artifact-standalone-x86_64: 
 	cd $(CROPDROID_SRC) && \
-		make clean build-standalone && \
+		make -j$(CORES) clean build-standalone && \
 		cp cropdroid $(ANSIBLE_CROPDROID_FILES)/cropdroid-standalone-x86_64
 
 ansible-artifact-standalone-arm64: 
 	cd $(CROPDROID_SRC) && \
-		make clean build-standalone-static-arm64 && \
+		make -j$(CORES) clean build-standalone-static-arm64 && \
 		cp cropdroid $(ANSIBLE_CROPDROID_FILES)/cropdroid-standalone-arm64
 
 ansible-artifact-standalone-arm: 
 	cd $(CROPDROID_SRC) && \
-		make clean build-standalone-static-arm && \
+		make -j$(CORES) clean build-standalone-static-arm && \
 		cp cropdroid $(ANSIBLE_CROPDROID_FILES)/cropdroid-standalone-arm
 
 ansible-artifacts: ansible-artifacts-common \
-	ansible-artifact-standalone-x86_64 \ 
+	ansible-artifact-standalone-x86_64 \
 	ansible-artifact-standalone-arm64 \
 	ansible-artifact-standalone-arm
-	$(MAKE) clean
+#	$(MAKE) clean
 
-ansible-clean:
-	rm -rf $(ANSIBLE_CROPDROID_FILES)/*
+# ansible-clean:
+# 	rm -rf $(ANSIBLE_CROPDROID_FILES)/*
+
+ansible-cluster:
+	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER1) make ansible
+	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER2) make ansible
+	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER3) make ansible
 
 
 
@@ -1161,6 +1198,7 @@ local-init-log:
 	sudo touch /var/log/cropdroid/cluster/node-1.log && sudo chmod 777 /var/log/cropdroid/cluster/node-1.log
 	sudo touch /var/log/cropdroid/cluster/node-2.log && sudo chmod 777 /var/log/cropdroid/cluster/node-2.log
 	sudo touch /var/log/cropdroid/cluster/node-3.log && sudo chmod 777 /var/log/cropdroid/cluster/node-3.log
+	sudo chown -R $(USER) /var/log/cropdroid
 
 # local-init-cluster:
 # 	set -e ; \
@@ -1171,24 +1209,24 @@ local-init-log:
 local-init-cockroachdb:
 	$(CROPDROID_SRC)/cropdroid config --init --debug --datastore cockroach
 
-local-cropdroid-cluster-pebble:
+local-cropdroid-cluster-pebble: local-cluster-cockroachdb 
 	cd $(CROPDROID_SRC) && \
-		make build-cluster-pebble-debug-static
-	$(MAKE) local-cluster-cockroachdb 
+		make build-cluster-pebble-debug
 	cp -R $(CROPDROID_SRC)/public_html .
-	#$(SCRIPTS_HOME)/start-cluster.sh
-	$(SCRIPTS_HOME)/start-cluster-tmux.sh
+	cp -R $(CROPDROID_SRC)/keys .
+	$(SCRIPTS_HOME)/start-cluster-debug.sh
+	#$(SCRIPTS_HOME)/start-cluster-tmux.sh
 
-local-cropdroid-cluster-rockdb: build-cluster-pebble-debug
-	#$(SCRIPTS_HOME)/start-cluster.sh
-	$(SCRIPTS_HOME)/start-cluster-tmux.sh
+local-cropdroid-cluster-debug: build-cluster-pebble-debug
+# 	$(SCRIPTS_HOME)/start-cluster-tmux.sh
 
 local-cluster-cockroachdb:
 	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
-	$(MAKE) local-init-cockroachdb
 
-devclusterdebug: build-amd64-cluster-debug
-	$(SCRIPTS_HOME)/start-cluster-debug.sh
+local-cluster-debug: local-clean \
+	local-roach-cluster \
+	local-init-cockroachdb \
+	local-cropdroid-cluster-pebble
 
 local-roach-cluster:
 	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
@@ -1203,12 +1241,13 @@ local-standalone-cockroach:
 	./$(APP) standalone --debug --ssl=false --port 8091 --datastore cockroach
 
 local-clean:
-	-killall cockroach
-	-killall $(APP)*
+	-killall -9 cockroach
+	-killall -9 $(APP)*
 	-tmux kill-server
 	-rm -rf db/
 	-rm -rf public_html/
-	-rf -rf example-data/
+	-rm -rf example-data/
+	-rm -rf /var/log/cropdroid/cluster/*
 
 local-redeploy-cropdroid-cluster-pebble: local-clean \
 	local-cropdroid-cluster-pebble
@@ -1217,3 +1256,23 @@ local-redeploy-cropdroid-cluster-pebble: local-clean \
 	#tmux kill-server
 	#rm -rf db/
 	#$(MAKE) local-cropdroid-cluster-pebble
+
+
+
+# Apache Bench Performance Testing
+ab-system:
+	ab -n 1000 -c $(CORES) $(API_SYSTEM_ENDPOINT)
+
+ab-farm-state:
+	ab -n 1000 -c $(CORES) -H "Authorization: $(API_JWT_TOKEN)" $(API_STATE_ENDPOINT)
+
+ab-farm-config:
+	ab -n 1000 -c $(CORES) -H "Authorization: $(API_JWT_TOKEN)" $(API_CONFIG_ENDPOINT)
+
+ab-farm-devices:
+	ab -n 1000 -c $(CORES) -H "Authorization: $(API_JWT_TOKEN)" $(API_DEVICES_ENDPOINT)
+
+ab-all: ab-system \
+	ab-farm-state \
+	ab-farm-config \
+	ab-farm-devices

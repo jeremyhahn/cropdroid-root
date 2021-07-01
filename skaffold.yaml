@@ -178,7 +178,7 @@ build:
 deploy:
   kustomize:
     paths:
-    - devops/kubernetes/cockroachdb-default/base
+    - devops/kubernetes/cockroachdb-operator/base
     #- devops/kubernetes/cropdroid-cluster/overlays/dev
     - devops/kubernetes/cropdroid-cluster/overlays/dev-cockroachdb
     #- devops/kubernetes/cropdroid-standalone/overlays/dev
