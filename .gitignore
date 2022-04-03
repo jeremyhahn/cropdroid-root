@@ -4,3 +4,5 @@ example-data/
 src/
 devops/
 raspberry-pi/
+
+.terraform/

@@ -6,29 +6,31 @@ CORES                   ?= $(shell nproc)
 ARCH                    := $(shell go env GOARCH)
 OS                      := $(shell go env GOOS)
 BUILDDIR                := $(shell pwd)
+TIMEZONE                ?= $(shell cat /etc/timezone)
 TIMESTAMP               := $(shell date +"%Y-%m-%d_%H-%M-%S")
 NUMPROC                 := $(shell nproc)
 BROWSER                 ?= /usr/bin/firefox
 #LOCAL_ADDRESS           ?= $(shell hostname -I | cut -d " " -f1)
 LOCAL_ADDRESS           ?= localhost
 
-GOBIN                   := $(shell dirname `which go`)
+#GOBIN                   := $(shell dirname `which go`)
+GOBIN                   := $(HOME)/go/bin
 
 CROPDROID_SRC           ?= src/go-cropdroid
 CROPDROID_DATASTORE     ?= memory
 
 APP                     := cropdroid
-APPTYPE					?= standalone
-ENV             		?= dev
+APPTYPE									?= standalone
+ENV             				?= dev
 TARGET_USER             ?= pi
-TARGET_HOST             ?= 192.168.0.131
-TARGET_ARCH				?= arm64
+TARGET_HOST             ?= cropdroid1
+TARGET_ARCH							?= arm64
 WEBSERVER_USER          ?= www-data
 
 HOSTNAME                ?= cropdroid1
 ETH0_CIDR               ?= 192.168.0.131/24
-ETH0_ROUTERS            ?= 192.168.1.1
-ETH0_DNS                ?= 192.168.1.1
+ETH0_ROUTERS            ?= 192.168.0.1
+ETH0_DNS                ?= 192.168.0.1
 WLAN_CIDR               ?= 192.168.100.131/24
 WLAN_ROUTERS            ?= 192.168.100.1
 WLAN_DNS                ?= 192.168.100.1
@@ -52,33 +54,31 @@ COCKROACHDB_JOIN_FLAG   ?= $(CLUSTER_PEER1):26257,$(CLUSTER_PEER2):26257,$(CLUST
 SOURCES                 ?= $(HOME)/sources
 DEVOPS_HOME             ?= $(PWD)/devops
 FIRMWARE_HOME           ?= $(HOME)/eclipse-workspace
-FIRMWARE_STAGE          ?= artifacts/firmware
-BOOTLOADER_STAGE        ?= artifacts/bootloaders
 IMAGES_HOME             ?= $(DEVOPS_HOME)/images
 DEPLOY_HOME             ?= /opt/$(APP)
 SCRIPTS_HOME            ?= $(DEVOPS_HOME)/scripts
 
 # Required by Ansible playbook and Packer builds
-AWS_ACCESS_KEY_ID      ?=
-AWS_SECRET_ACCESS_KEY  ?=
-AWS_REGION             ?= us-east-1
-AWS_PROFILE            ?= default
+AWS_ACCESS_KEY_ID       ?=
+AWS_SECRET_ACCESS_KEY   ?=
+AWS_REGION              ?= us-east-1
+AWS_PROFILE             ?= default
 
 # Required by docker targets
-DOCKER_HOME              ?= $(DEVOPS_HOME)/docker
-DOCKER_REGISTRY          ?= docker.io
-DOCKER_USERNAME          ?= jeremyhahn
-DOCKER_PASSWORD          ?= 
-DOCKER_EMAIL             ?= root@localhost
-DOCKER_SUBNET            ?= 172.18.0.0/16
-DOCKER_NODE1_IP          ?= 172.18.0.10
-DOCKER_NODE2_IP          ?= 172.18.0.11
-DOCKER_NODE3_IP          ?= 172.18.0.12
-DOCKER_OS                ?= ubuntu
-DOCKER_OS_TAG		     ?= latest
-DOCKER_IMAGE             ?= $(DOCKER_OS):$(DOCKER_OS_TAG)
-DOCKER_ALPINE_IMAGE      ?= alpine:latest
-DOCKER_GOLANG_IMAGE      ?= golang:buster
+DOCKER_HOME             ?= $(DEVOPS_HOME)/docker
+DOCKER_REGISTRY         ?= docker.io
+DOCKER_USERNAME         ?= jeremyhahn
+DOCKER_PASSWORD         ?=
+DOCKER_EMAIL            ?= root@localhost
+DOCKER_SUBNET           ?= 172.18.0.0/16
+DOCKER_NODE1_IP         ?= 172.18.0.10
+DOCKER_NODE2_IP         ?= 172.18.0.11
+DOCKER_NODE3_IP         ?= 172.18.0.12
+DOCKER_OS               ?= ubuntu
+DOCKER_OS_TAG		        ?= latest
+DOCKER_IMAGE            ?= $(DOCKER_OS):$(DOCKER_OS_TAG)
+DOCKER_ALPINE_IMAGE     ?= alpine:latest
+DOCKER_GOLANG_IMAGE     ?= golang:buster
 
 DOCKER_BUILDER_ROCKSDB_BASE_IMAGE ?= ubuntu:20.10
 DOCKER_BUILDER_ROCKSDB_VERSION    ?= 6.10.fb
@@ -89,7 +89,7 @@ DOCKER_BUILDER_COCKROACH_VERSION    ?= v21.1.1
 DOCKER_BUILDX_TAG_PREFIX ?= $(DOCKER_REGISTRY)/$(DOCKER_USERNAME)/
 
 ifeq ($(DOCKER_LOCAL),1)
- 	DOCKER_BUILD_TAG_PREFIX = 
+ 	DOCKER_BUILD_TAG_PREFIX =
 else
 	DOCKER_BUILD_TAG_PREFIX ?= $(DOCKER_USERNAME)/
 endif
@@ -100,10 +100,12 @@ PACKER_BUILDER_UBUNTU64  ?= ubuntu-20.04.01-arm64
 PACKER_BUILDER           ?= $(PACKER_BUILDER_RASPIOS64)
 
 ANSIBLE_HOME             ?= $(DEVOPS_HOME)/ansible
-ANSIBLE_CROPDROID 		 ?= $(ANSIBLE_HOME)/roles/$(APP)
+ANSIBLE_CROPDROID 		   ?= $(ANSIBLE_HOME)/roles/$(APP)
 ANSIBLE_CROPDROID_FILES  ?= $(ANSIBLE_CROPDROID)/files
+ANSIBLE_FIRMWARE         ?= $(ANSIBLE_CROPDROID_FILES)/firmware
+#ANSIBLE_BOOTLOADER       ?= $(ANSIBLE_CROPDROID_FILES)/bootloaders
 
-IMAGE_NAME			 	 ?= $(HOSTNAME)-$(APPTYPE)-$(ENV)
+IMAGE_NAME		           ?= $(HOSTNAME)-$(APPTYPE)-$(ENV)
 IMAGE_FILENAME           ?= $(IMAGE_NAME).img
 
 RPI_KERNEL              ?= $(SOURCES)/qemu-rpi-kernel
@@ -113,13 +115,26 @@ RPI_SDCARD              ?= /dev/sda
 
 
 # Performance testing
-API_ENDPOINT         ?= http://localhost:8091
-API_JWT_TOKEN        ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6NTY2OTkyNDk5MzcwMDY1OTIxLCJlbWFpbCI6ImFkbWluIiwib3JnYW5pemF0aW9ucyI6Ilt7XCJpZFwiOjAsXCJuYW1lXCI6XCJcIixcImZhcm1zXCI6W3tcImlkXCI6NTY2OTkyNDk5NTU2MzE5MjMzLFwibmFtZVwiOlwiRmlyc3QgUm9vbVwiLFwicm9sZXNcIjpudWxsfV0sXCJyb2xlc1wiOltcImFkbWluXCJdLFwibGljZW5zZVwiOm51bGx9XSIsImV4cCI6MTYyNDcwODg2NCwiaWF0IjoxNTkzMTUxMjY0LCJpc3MiOiJjcm9wZHJvaWQifQ.DdjuBzLrh240cbgyqGi5f65UjjVFvMCtnNsIv5NUS81EnHlfk_wtz-xu5Yd5wDLIcMjEBwjSLJfWWBeIdEWtrwzH0sibqHE0xDTxCENRNAQ6uQitzxkARgvT--E27CFPmLmiJDyvsxe9e45CbkICB6yC-xBR5cpLAEUEGk9kEKPU2Phv29R3s-iIUYOuSqoFJ9cDFkc_09Pbmzd5oQnn4YN8AVsWRHkrIStwOv_TKajHhcdbCOe7AICn3CuobJmFyAMn3tmgOJ5u0gdMch0m1mu45ERxGGnfqls-IbyU0f6ISan6F5yrRA6UjCz7MTDxNn_KJLf8VGpE6JXyEGvjEQ
-API_FARM_ID          ?= 1
-API_SYSTEM_ENDPOINT  ?= $(API_ENDPOINT)/system
-API_STATE_ENDPOINT   ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/state
-API_CONFIG_ENDPOINT  ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/config
-API_DEVICES_ENDPOINT ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/devices
+API_ENDPOINT               ?= http://localhost:8091
+API_WS_ENDPOINT            ?= ws://localhost:8091
+API_UID                    ?= 1
+API_USERNAME               ?= admin
+API_PASSWORD               ?= cropdroid
+API_AUTH_TYPE              ?= 0 # 0 = local auth, 1 = google auth
+#API_JWT_TOKEN             ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6MiwiZW1haWwiOiJtYWlsQGplcmVteWhhaG4uY29tIiwib3JnYW5pemF0aW9ucyI6Ilt7XCJpZFwiOjAsXCJuYW1lXCI6XCJcIixcImZhcm1zXCI6W3tcImlkXCI6MixcIm5hbWVcIjpcIkZpcnN0IFJvb21cIixcInJvbGVzXCI6bnVsbH1dLFwicm9sZXNcIjpbXCJhZG1pblwiXSxcImxpY2Vuc2VcIjpudWxsfV0iLCJleHAiOjE2NjQwNDI1NTIsImlhdCI6MTYzMjQ4NDk1MiwiaXNzIjoiY3JvcGRyb2lkIn0.LF06h59lh2JluA3dmk7ILCgAXxJHlpsD1GEt3mCEftkZr1rEJ-5IBXCFc2SgFZvZgQ5cKDQLibBUqfqhpinPydZf7YozYKFVzsH1W7dd0E6XUpSQ4WA2rdR03KS6P_fCS1KGxwkriFPhTxZ5y6TFSoV8RZR1NP7KYkzYPHD6m4f1G_-VmSg4QNIgT47lcgEQm4bmoR57QnVj0BWfGuuNVzAF8YCFCielg0uLmD3Ph4zl6ovmIm5g3jkGCwCavO02jT3Su-YaVO3AVW2e_-3WpRomCFbX8gagPI22zCEruLnormVxYXiFXTmQyRLF5uY0uEfAoDpdEIIv1J9lm7vzPw
+#API_JWT_TOKEN              ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6MSwiZW1haWwiOiJhZG1pbiIsIm9yZ2FuaXphdGlvbnMiOiJbe1wiaWRcIjowLFwibmFtZVwiOlwiXCIsXCJmYXJtc1wiOltdLFwicm9sZXNcIjpbXCJhZG1pblwiXSxcImxpY2Vuc2VcIjpudWxsfV0iLCJleHAiOjE2NjQwNTgzMjIsImlhdCI6MTYzMjUwMDcyMiwiaXNzIjoiY3JvcGRyb2lkIn0.qHCv86RMI228eL7WNumRG6pfnXw9QMLNH6xEmNHX2zewjmZU91praly6lVGLAb1Bcr5o9iUcYoT9AEOFfO-VbE-MTajpFrys_3eBPqe4LmzgCwpnrFMK-daL8dw5i6oRxelrV-7dPjfmmL_uBmKohSxlkU3Z9IXoayXR7KY_0c3NTTDbG4MxbmL1eRlQRSecVdPAqur9DbnWVjFL9kdYlF3GNq9uztQw2CnxezMX3ECESPPbKhrx2MnTiD9EIq_Ivj4kYdHrXYS6xh_H9T8v74W0Bsb4Wp-0jvMMZyTo0ZxLI48LcreZHOGlzhX4G_DGMeMtaYzYT0a0whn7muezWg
+# cluster token
+API_JWT_TOKEN              ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6Njk3MzI0NjAyNjkyMzM3NjY1LCJlbWFpbCI6ImFkbWluIiwib3JnYW5pemF0aW9ucyI6Ilt7XCJpZFwiOjAsXCJuYW1lXCI6XCJcIixcImZhcm1zXCI6W10sXCJyb2xlc1wiOltcImFkbWluXCJdLFwibGljZW5zZVwiOm51bGx9XSIsImV4cCI6MTY2NDQzNDczOCwiaWF0IjoxNjMyODc3MTM4LCJpc3MiOiJjcm9wZHJvaWQifQ.POrzsNe9VNhJ31sX2-YSf3m5Flgwyo76nUgQ0vGLLpcQlfJ5hCzehsEg_5nhg87SuaQmSroZjZPEwPsTOLsCe7dVrKXwaRQj6mMm9sNcBw5BWp9f4pF3eEx5PBNvWlAkq6UYwtFw7RQ5aU6U21CaLyswdoy1jvuFFmzxuz2RWa-RGl3-a9Uzmc15CoruvCo-GcqgAcAW-DMPhhJ6uNbXaF9d3czsjsqzujBBL2rDJz80EmYn_jEktfbO8RD6xuKGH4mcq4m7DbrokD-_pY05jPsroXDbgw14mgeiHggTGLMo5SJDQJ8QHECTqp9YFS9hTXh_QnhyzCZk3y9sN1ADtw
+API_FARM_ID                ?= 1
+API_SYSTEM_ENDPOINT        ?= $(API_ENDPOINT)/system
+API_STATE_ENDPOINT         ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/state
+API_CONFIG_ENDPOINT        ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/config
+API_DEVICES_ENDPOINT       ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/devices
+API_PROVISIONER_ENDPOINT   ?= $(API_ENDPOINT)/api/v1/provisioner/provision
+API_LOGIN_ENDPOINT         ?= $(API_ENDPOINT)/api/v1/login
+API_LOGIN_REFRESH_ENDPOINT ?= $(API_LOGIN_ENDPOINT)/refresh
+API_FARMTICKER_ENDPOINT    ?= $(API_WS_ENDPOINT)/api/v1/farmticker/$(API_FARM_ID)
+
 
 
 default: minikube-start build-images
@@ -140,11 +155,44 @@ docker-build-env:
 
 
 room1:
-	ENV=prod $(MAKE) build-arm packer-raspios sdimage
+	cd $(CROPDROID_SRC) && \
+		make -j$(CORES) clean build-standalone-arm64-static
+	ENV=prod \
+	IMAGE_NAME=room1 \
+	CROPDROID_DATASTORE=sqlite \
+	$(MAKE) packer-raspios64 sdcard
 
 room2:
-	ENV=prod HOSTNAME=cropdroid2 ETH0_CIDR=192.168.0.132/24 WLAN_CIDR=192.168.100.132/24 $(MAKE) build-arm packer-raspios sdimage
+	cd $(CROPDROID_SRC) && \
+		make -j$(CORES) clean build-standalone-arm64-static
+	ENV=prod \
+	IMAGE_NAME=room2 \
+	HOSTNAME=cropdroid2 \
+	CROPDROID_DATASTORE=sqlite \
+	ETH0_CIDR=192.168.0.132/24 \
+	WLAN_CIDR=192.168.100.132/24 \
+	$(MAKE) packer-raspios64 sdcard
 
+rebuild-and-deploy:
+	cd $(CROPDROID_SRC) && \
+	make -j$(CORES) build-standalone-arm64-debug-static && \
+	ssh $(TARGET_USER)@$(TARGET_HOST) 'sudo systemctl stop cropdroid' && \
+	scp cropdroid $(TARGET_USER)@$(TARGET_HOST):/usr/local/bin/cropdroid && \
+	ssh $(TARGET_USER)@$(TARGET_HOST) 'sudo systemctl start cropdroid'
+
+remote-debug:
+	cd $(CROPDROID_SRC) && \
+	make -j$(CORES) build-standalone-arm64-debug-static && \
+	ssh $(TARGET_USER)@$(TARGET_HOST) 'sudo systemctl stop cropdroid' && \
+	scp cropdroid $(TARGET_USER)@$(TARGET_HOST):/usr/local/bin/cropdroid && \
+	ssh $(TARGET_USER)@$(TARGET_HOST) \
+	'sudo /home/$(TARGET_USER)/go/bin/dlv --listen=:40000 --headless=true --api-version=2 --accept-multiclient exec /usr/local/bin/cropdroid -- $(APPTYPE) --debug --home $(DEPLOY_HOME) --keys $(DEPLOY_HOME)/keys --data-dir $(DEPLOY_HOME)/db --port 80 --ssl=false --datastore $(CROPDROID_DATASTORE)'
+
+remote-debug-kill:
+	ssh $(TARGET_USER)@$(TARGET_HOST) 'sudo killall dlv'
+
+firmware:
+	scp -r $(ANSIBLE_FIRMWARE)/* $(TARGET_USER)@$(TARGET_HOST):$(DEPLOY_HOME)/firmware
 
 
 # -------------- #
@@ -158,6 +206,9 @@ init:
 	-git clone git@github.com:jeremyhahn/cropdroid-reservoir.git src/cropdroid-reservoir
 	-git clone git@github.com:jeremyhahn/cropdroid-doser.git src/cropdroid-doser
 	-git clone git@github.com:jeremyhahn/cropdroid-android.git src/cropdroid-android
+	-mkdir terraform
+	-git clone git@github.com:cropdroid/tf-env-root.git terraform/tf-env-root
+	
 
 
 certs:
@@ -166,7 +217,6 @@ certs:
           -subj "/C=US/ST=MA/L=Boston/O=Automate The Things, LLC/CN=localhost"
 	openssl genrsa -out keys/rsa.key 2048
 	openssl rsa -in keys/rsa.key -pubout -out keys/rsa.pub
-
 
 
 # ------------- #
@@ -631,7 +681,7 @@ k8s-deploy-cockroachdb:
 	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/crdb.cockroachlabs.com_crdbclusters.yaml
 	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/operator.yaml
 	kubectl apply -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/cluster.yaml
-	
+
 	#kubectl apply -k $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/overlays/dev
 	#kubectl port-forward service/cockroachdb-public 8080 &
 
@@ -645,7 +695,7 @@ k8s-delete-cockroachdb:
 	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/crdb.cockroachlabs.com_crdbclusters.yaml
 	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/operator.yaml
 	kubectl delete -f $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/base/cluster.yaml
-	
+
 	#kubectl delete -k $(DEVOPS_HOME)/kubernetes/cockroachdb-operator/overlays/dev
 	#kubectl delete namespace cockroachdb-operator
 
@@ -748,6 +798,7 @@ packer-build:
 		-var "appname=$(APP)" \
 		-var "apptype=$(APPTYPE)" \
 		-var "appenv=$(ENV)" \
+		-var "timezone=$(TIMEZONE)" \
 		-var "hostname=$(HOSTNAME)" \
 		-var "cropdroid_home=$(DEPLOY_HOME)" \
 		-var "eth0_cidr=$(ETH0_CIDR)" \
@@ -760,6 +811,8 @@ packer-build:
 		-var "wlan_psk=$(WLAN_PSK)" \
 		-var "wlan_key_mgmt=$(WLAN_KEY_MGMT)" \
 		-var "wlan_country=$(WLAN_COUNTRY)" \
+		-var "cockroachdb_user=$(TARGET_USER) \
+		-var "cockroachdb_owner=$(TARGET_USER) \
 		-var "datastore=$(CROPDROID_DATASTORE)" \
 		-var "cropdroid_binary=cropdroid-$(APPTYPE)-arm64" \
 	    packer/$(PACKER_FILE)
@@ -773,7 +826,7 @@ packer-ubuntu64: ansible-artifacts-common ansible-artifact-standalone-arm64
 packer-raspios64: ansible-artifacts-common ansible-artifact-standalone-arm64
 	PACKER_BUILDER=$(PACKER_BUILDER_RASPIOS64) \
 	$(MAKE) packer
- 
+
 packer-clean:
 	sudo rm -rf $(DEVOPS_HOME)/output-* && \
 	rm -rf $(DEVOPS_HOME)/images/*
@@ -794,7 +847,7 @@ ansible: ansible-rsync
 		-e appname=$(APP) \
 		-e apptype=$(APPTYPE) \
 		-e appenv=$(ENV) \
-		-e hostname=$(TARGET_HOST) \
+		-e hostname=$(HOSTNAME) \
 		-e cropdroid_home=$(DEPLOY_HOME) \
 		-e cropdroid_binary=cropdroid-$(APPTYPE)-arm64 \
 		-e wlan_ssid=$(WLAN_SSID) \
@@ -804,6 +857,8 @@ ansible: ansible-rsync
 		-e datastore=$(CROPDROID_DATASTORE) \
 		-e "gossip_peers=$(CLUSTER_GOSSIP_PEERS)" \
 		-e "raft_peers=$(CLUSTER_RAFT_PEERS)" \
+		-e "cockroachdb_user=$(TARGET_USER) \
+		-e "cockroachdb_owner=$(TARGET_USER) \
 		-e "cockroachdb_peers=$(COCKROACHDB_JOIN_FLAG)" \
 		-e owner=$(WEBSERVER_USER) \
 		-e group=$(TARGET_USER)
@@ -811,39 +866,46 @@ ansible: ansible-rsync
 ansible-rsync:
 	rsync -avr -e "ssh -l $(TARGET_USER)" $(DEVOPS_HOME)/ansible/* $(TARGET_USER)@$(TARGET_HOST):ansible
 
-ansible-artifacts-common:
+ansible-artifacts-common: ansible-firmware
 	cd $(CROPDROID_SRC) && \
 		cp -R keys/ $(ANSIBLE_CROPDROID_FILES)/ && \
 		cp -R public_html/ $(ANSIBLE_CROPDROID_FILES)/
 
-ansible-artifact-standalone-x86_64: 
+ansible-artifact-standalone-x86_64:
 	cd $(CROPDROID_SRC) && \
 		make -j$(CORES) clean build-standalone && \
 		cp cropdroid $(ANSIBLE_CROPDROID_FILES)/cropdroid-standalone-x86_64
 
-ansible-artifact-standalone-arm64: 
+ansible-artifact-standalone-arm64:
 	cd $(CROPDROID_SRC) && \
-		make -j$(CORES) clean build-standalone-static-arm64 && \
+		make -j$(CORES) clean build-standalone-arm64-static && \
 		cp cropdroid $(ANSIBLE_CROPDROID_FILES)/cropdroid-standalone-arm64
 
-ansible-artifact-standalone-arm: 
+ansible-artifact-standalone-arm:
 	cd $(CROPDROID_SRC) && \
-		make -j$(CORES) clean build-standalone-static-arm && \
+		make -j$(CORES) clean build-standalone-arm-static && \
 		cp cropdroid $(ANSIBLE_CROPDROID_FILES)/cropdroid-standalone-arm
 
 ansible-artifacts: ansible-artifacts-common \
 	ansible-artifact-standalone-x86_64 \
 	ansible-artifact-standalone-arm64 \
 	ansible-artifact-standalone-arm
-#	$(MAKE) clean
+#	$(MAKE) ansible-clean
 
-# ansible-clean:
-# 	rm -rf $(ANSIBLE_CROPDROID_FILES)/*
+ansible-firmware:
+	rm -rf $(ANSIBLE_FIRMWARE)/*.hex
+	cp $(FIRMWARE_HOME)/cropdroid-reservoir/build/Mega/cropdroid-reservoir.hex $(ANSIBLE_FIRMWARE)/
+	cp $(FIRMWARE_HOME)/cropdroid-room/build/Nano/cropdroid-room.hex $(ANSIBLE_FIRMWARE)/
+	cp $(FIRMWARE_HOME)/cropdroid-doser/build/Nano/cropdroid-doser.hex $(ANSIBLE_FIRMWARE)/
+	cp $(FIRMWARE_HOME)/cropdroid-irrigation/build/Nano/cropdroid-irrigation.hex $(ANSIBLE_FIRMWARE)/
 
 ansible-cluster:
 	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER1) make ansible
 	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER2) make ansible
 	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER3) make ansible
+
+# ansible-clean:
+# 	rm -rf $(ANSIBLE_CROPDROID_FILES)/*
 
 
 
@@ -880,7 +942,7 @@ qemu-stretch:
 qemu-raspios64:
 	#-hda $(IMAGES_HOME)/2020-05-27-raspios-buster-arm64-test.img
 	#root=LABEL=root ro rootwait console=ttyS1,115200
-	#-cpu cortex-a72 
+	#-cpu cortex-a72
 	#-kernel $(SOURCES)/rpi4kernel/linux/kernel-build/arch/arm64/boot/Image
 	#-net user,hostfwd=tcp::5022-:22
 	#-serial stdio
@@ -892,7 +954,7 @@ qemu-raspios64:
 	#-device usb-net,netdev=net0 -netdev user,id=net0,hostfwd=tcp::5555-:22 \
 	#-append "console=ttyAMA0 root=/dev/mmcblk0p2 rw rootwait rootfstype=ext4" \
 	#-drive file=$(IMAGES_HOME)/$(IMAGE_NAME).img,format=raw,if=sd,id=hd-root  \
-	##-append "rw earlycon=pl011,0x3f201000 console=ttyAMA0 loglevel=8 root=/dev/mmcblk0p2 rw rootwait rootfstype=ext4" \	
+	##-append "rw earlycon=pl011,0x3f201000 console=ttyAMA0 loglevel=8 root=/dev/mmcblk0p2 rw rootwait rootfstype=ext4" \
 	#-dtb /home/jhahn/sources/rpi4kernel/linux/kernel-build/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b-plus.dtb \
 	#-M raspi3 \
 	#-device virtio-blk-device,drive=hd-root \
@@ -908,9 +970,9 @@ qemu-raspios64:
 		-append "rw earlycon=pl011,0x3f201000 console=ttyAMA0 loglevel=8 root=/dev/mmcblk0p2 fsck.repair=yes net.ifnames=0 rootwait memtest=1" \
 		-nographic
 
- 
-#-kernel /home/jhahn/sources/rpi4kernel/kernel8.img 
-#-dtb /home/jhahn/sources/rpi4kernel/linux/kernel-build/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb 
+
+#-kernel /home/jhahn/sources/rpi4kernel/kernel8.img
+#-dtb /home/jhahn/sources/rpi4kernel/linux/kernel-build/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb
 qemu-arm64:
 	#-drive file=devops/output-2020-05-27-raspios-buster-arm64-dev/base-new,if=none,id=drive0,cache=writeback
 	qemu-system-aarch64 \
@@ -960,8 +1022,8 @@ qemu-ubuntu-arm64:
 		-device virtio-blk-pci,drive=drv0 \
 		-object rng-random,filename=/dev/urandom,id=rng0 \
 		-device virtio-rng-pci,rng=rng0 \
-		-device virtio-scsi 
-		#-device scsi-cd,drive=cd 
+		-device virtio-scsi
+		#-device scsi-cd,drive=cd
 		#-drive if=none,id=cd,file=$(IMAGES_HOME)/ubuntu-20.04.1-live-server-arm64.iso
 
 qemu-ubuntu-aarch64:
@@ -1083,7 +1145,7 @@ docker-run-cockroachdb-cluster:
 docker-run-cropdroid-cluster-pebble:
 	#-v "${PWD}/cropdroid-data/cropdroid-0-0:/cropdroid-data"
 	#-v "${PWD}/keys:/keys"
-	
+
 	docker run -d \
 		--name=cropdroid-0-0 \
 		--hostname=cropdroid-0-0 \
@@ -1137,7 +1199,7 @@ docker-run-cropdroid-cluster-pebble:
 			--raft-port 60022
 	$(SCRIPTS_HOME)/docker-cluster-tmux.sh
 
-docker-run-cluster-pebble: 
+docker-run-cluster-pebble:
 	cd $(CROPDROID_SRC) && \
 		make build-cluster-pebble-debug-static
 	$(MAKE) docker-build-base \
@@ -1206,12 +1268,30 @@ local-init-log:
 # 	sudo touch $$FILES ; \
 # 	sudo chown $(USER) $$FILES
 
-local-init-cockroachdb:
-	$(CROPDROID_SRC)/cropdroid config --init --debug --datastore cockroach
+local-cockroach-init:
+	$(CROPDROID_SRC)/cropdroid config \
+		--init \
+		--debug \
+		--enable-default-farm=false \
+		--datastore cockroach
 
-local-cropdroid-cluster-pebble: local-cluster-cockroachdb 
+local-cluster-cockroach:
+	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
+
+local-cockroach-cluster:
+	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
+
+local-roach: local-cropdroid-cluster-compile \
+	local-cockroach-cluster \
+	local-cockroach-init
+
+local-cropdroid-cluster-compile:
 	cd $(CROPDROID_SRC) && \
 		make build-cluster-pebble-debug
+
+local-cropdroid-cluster-pebble: local-cockroach-init \
+	local-cropdroid-cluster-compile
+
 	cp -R $(CROPDROID_SRC)/public_html .
 	cp -R $(CROPDROID_SRC)/keys .
 	$(SCRIPTS_HOME)/start-cluster-debug.sh
@@ -1220,16 +1300,16 @@ local-cropdroid-cluster-pebble: local-cluster-cockroachdb
 local-cropdroid-cluster-debug: build-cluster-pebble-debug
 # 	$(SCRIPTS_HOME)/start-cluster-tmux.sh
 
-local-cluster-cockroachdb:
-	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
+# local-cluster-debug: local-clean \
+# 	local-cockroach-cluster \
+# 	local-cropdroid-cluster-pebble
 
 local-cluster-debug: local-clean \
-	local-roach-cluster \
-	local-init-cockroachdb \
-	local-cropdroid-cluster-pebble
+	local-cropdroid-cluster-compile
 
-local-roach-cluster:
-	$(SCRIPTS_HOME)/start-cockroach-cluster.sh
+	cp -R $(CROPDROID_SRC)/public_html .
+	cp -R $(CROPDROID_SRC)/keys .
+	$(SCRIPTS_HOME)/start-cluster-debug.sh
 
 local-standalone:
 	./$(APP) standalone --debug --ssl=false --port 8091
@@ -1247,7 +1327,11 @@ local-clean:
 	-rm -rf db/
 	-rm -rf public_html/
 	-rm -rf example-data/
-	-rm -rf /var/log/cropdroid/cluster/*
+	-rm -rf pebbledb-data/
+	-rm -rf $(CROPDROID_SRC)/example-data/
+	-rm -rf $(CROPDROID_SRC)/pebbledb-data/
+	-sudo rm -rf /var/log/cropdroid/cluster/*
+	-rm -rf $(CROPDROID_SRC)/db/cluster/*
 
 local-redeploy-cropdroid-cluster-pebble: local-clean \
 	local-cropdroid-cluster-pebble
@@ -1276,3 +1360,43 @@ ab-all: ab-system \
 	ab-farm-state \
 	ab-farm-config \
 	ab-farm-devices
+
+
+
+# Websocket Test
+websocket-test:
+	@echo '"{\"id\":\"$(API_UID)}\"}'
+	$(GOBIN)/ws $(API_FARMTICKER_ENDPOINT)
+
+	# curl -vvv --include \
+    #  --no-buffer \
+    #  --header "Connection: Upgrade" \
+    #  --header "Upgrade: websocket" \
+    #  --header "Host: $(LOCAL_ADDRESS)" \
+    #  --header "Origin: $(API_ENDPOINT)" \
+	#  --header "Authorization: $(API_JWT_TOKEN)" \
+    #  --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
+    #  --header "Sec-WebSocket-Version: 13" \
+    #  $(API_FARMTICKER_ENDPOINT)
+
+rest-provision:
+	curl -s -X POST \
+    	-d '{"username": "admin"}' \
+     	--header "Host: $(LOCAL_ADDRESS)" \
+     	--header "Origin: $(API_ENDPOINT)" \
+	 	--header "Authorization: $(API_JWT_TOKEN)" \
+     	$(API_PROVISIONER_ENDPOINT) | jq .
+
+rest-login:
+	curl -s -X POST \
+    	-d '{"email": "$(API_USERNAME)", "password": "$(API_PASSWORD)", "authType": $(API_AUTH_TYPE)}' \
+     	--header "Host: $(LOCAL_ADDRESS)" \
+     	--header "Origin: $(API_ENDPOINT)" \
+     	$(API_LOGIN_ENDPOINT) | jq .
+
+rest-login-refresh:
+	curl -s -X GET \
+     	--header "Host: $(LOCAL_ADDRESS)" \
+     	--header "Origin: $(API_ENDPOINT)" \
+		--header "Authorization: $(API_JWT_TOKEN)" \
+     	$(API_LOGIN_REFRESH_ENDPOINT)

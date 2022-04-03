@@ -1,0 +1,16 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    ARTIFACT_BUCKET: pipeline-artifacts
+
+phases:
+  pre_build:
+    commands:
+      - echo Build started on `date`
+
+artifacts:
+  name: www
+  files:
+    - '**/*'

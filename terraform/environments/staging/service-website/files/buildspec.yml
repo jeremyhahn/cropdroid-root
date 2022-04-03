@@ -1,0 +1,18 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    WEBSITE_BUCKET: static-website-example
+    WEBSITE_DOMAIN: example.com
+
+phases:
+  pre_build:
+    commands:
+      - aws --version
+  build:
+    commands:
+      - aws s3 sync --debug --delete . s3://$WEBSITE_BUCKET/
+  post_build:
+    commands:
+      - curl -I -s $WEBSITE_DOMAIN | grep 'HTTP/1.1 200 OK'
