@@ -12,9 +12,10 @@ module "service_dashboard" {
   subject_alternative_names = local.subject_alternative_names
   enable_cloudfront         = true
   pipeline_role_arn         = module.pipeline_service_dashboard.codebuild_service_role
-  alert_topic_arn           = local.sns_topic_arn
+  alert_topic_arn           = local.infra_sns_topic
   enable_health_checks      = var.enable_health_checks
   enable_waf                = var.enable_waf
+  force_destroy             = local.force_destroy
   tags                      = local.tags
 }
 
@@ -29,9 +30,14 @@ module "pipeline_service_dashboard" {
   website_name         = "cropdroid"
   website_bucket       = var.website_bucket
   buildspec_template   = file("files/buildspec.yml")
+  enable_approval      = var.enable_approval
+  approval_sns_arn     = local.infra_sns_topic
   environment_variables = [{
     name = "WEBSITE_BUCKET"
     value = var.website_bucket
+  }, {
+    name = "WEBSITE_DOMAIN"
+    value = local.external_dns_name
   }]
   tags = local.tags
 }

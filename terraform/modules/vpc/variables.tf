@@ -163,3 +163,15 @@ variable "one_nat_gateway_per_az" {
   type        = bool
   default     = true
 }
+
+variable "enable_vpn_gateway" {
+  description = "Should be true if you want to create a new VPN Gateway resource and attach it to the VPC"
+  type        = bool
+  default     = false
+}
+
+variable "enable_nat_gateway" {
+  description = "Should be true if you want to provision NAT Gateways for each of your private networks"
+  type        = bool
+  default     = false
+}

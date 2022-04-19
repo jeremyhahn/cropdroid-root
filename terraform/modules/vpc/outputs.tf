@@ -71,6 +71,10 @@ output "bastion_ssm_private_key_pem_name" {
   value = var.create_bastion_keypair ? module.bastion.ssm_private_key_pem_name : ""
 }
 
+output "s3_artifact_repo_arn" {
+  value = var.create_artifact_repo ? module.artifactrepo[0].bucket_arn : ""
+}
+
 output "s3_artifact_repo" {
   value = var.artifact_bucket_name
 }

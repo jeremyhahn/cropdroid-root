@@ -11,6 +11,8 @@ data "aws_iam_policy_document" "canary_assume_role_policy" {
 }
 
 resource "aws_iam_role" "canary_role" {
+  count = var.enable_synthetics ? 1 : 0
+
   name               = "canary-role"
   path               = "/www/"
   assume_role_policy = data.aws_iam_policy_document.canary_assume_role_policy.json
@@ -35,6 +37,8 @@ data "aws_iam_policy_document" "canary_policy" {
 }
 
 resource "aws_iam_policy" "canary_policy" {
+  count = var.enable_synthetics ? 1 : 0
+
   name        = "canary-policy"
   path        = "/www/"
   policy      = data.aws_iam_policy_document.canary_policy.json
@@ -42,6 +46,8 @@ resource "aws_iam_policy" "canary_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "canary_policy_attachment" {
-  role       = aws_iam_role.canary_role.name
-  policy_arn = aws_iam_policy.canary_policy.arn
+  count = var.enable_synthetics ? 1 : 0
+
+  role       = aws_iam_role.canary_role[0].name
+  policy_arn = aws_iam_policy.canary_policy[0].arn
 }

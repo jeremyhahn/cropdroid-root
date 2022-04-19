@@ -9,14 +9,35 @@ data "terraform_remote_state" "shared_services" {
 }
 
 // TODO: day 2 support
+# data "terraform_remote_state" "stage_bootstrap" {
+#   backend = "local"
+#   config = {
+#     path = "../../staging/bootstrap/terraform.tfstate"
+#   }
+# }
+
 data "terraform_remote_state" "stage_bootstrap" {
-  backend = "local"
+  backend = "s3"
   config = {
-    path = "../../staging/bootstrap/terraform.tfstate"
+    bucket  = "terraform-remote-state-342432848845"
+    key     = "staging/bootstrap.tfstate"
+    region  = var.region
+    profile = var.profile
   }
 }
 
-# data "terraform_remote_state" "stage_bootstrap" {
+data "terraform_remote_state" "prod_bootstrap" {
+  backend = "s3"
+  config = {
+    bucket  = "terraform-remote-state-342432848845"
+    key     = "prod/bootstrap.tfstate"
+    region  = var.region
+    profile = var.profile
+  }
+}
+
+
+# data "terraform_remote_state" "prod_bootstrap" {
 #   backend = "local"
 #   config = {
 #     path = "../../prod/bootstrap/terraform.tfstate"

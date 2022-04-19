@@ -1,5 +1,5 @@
 output "artifact_bucket" {
-  value = data.terraform_remote_state.vpc.outputs.s3_artifact_repo
+  value = local.artifact_repo
 }
 
 output "codebuild_service_role" {

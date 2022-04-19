@@ -48,3 +48,8 @@ destroy:
 git-config:
 	git config --global credential.helper '!aws --profile $(PROFILE) codecommit credential-helper $$@'
 	git config --global credential.useHttpPath true
+
+
+teardown:
+	MODULE=service-website make destroy
+	MODULE=vpc make destroy

@@ -34,11 +34,11 @@ module "vpc" {
   create_database_subnet_group = false
 
   # One NAT Gateway per availability zone
-  enable_nat_gateway     = true
+  enable_nat_gateway     = var.enable_nat_gateway
   single_nat_gateway     = var.single_nat_gateway
   one_nat_gateway_per_az = var.one_nat_gateway_per_az
 
-  enable_vpn_gateway   = true
+  enable_vpn_gateway   = var.enable_vpn_gateway
   enable_dns_hostnames = true
   enable_dns_support   = true
   #enable_ipv6          = true

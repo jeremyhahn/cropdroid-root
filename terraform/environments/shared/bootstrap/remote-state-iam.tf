@@ -69,7 +69,9 @@ resource "aws_s3_bucket_policy" "remote_state" {
           "arn:aws:iam::${local.staging_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSOrganizationsFullAccess_9ba3758f193ef8e1",
           "arn:aws:iam::${local.staging_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSPowerUserAccess_6b2f6d06beb058b7",
           "arn:aws:iam::${local.staging_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSReadOnlyAccess_9ef77f738096cab9",
-          "arn:aws:sts::${local.staging_account_id}:assumed-role/AWSReservedSSO_AWSAdministratorAccess_a3f315f0e7cc692a/aws+staging@${local.sso_domain}"
+          "arn:aws:sts::${local.staging_account_id}:assumed-role/AWSReservedSSO_AWSAdministratorAccess_a3f315f0e7cc692a/aws+staging@${local.sso_domain}",
+          "arn:aws:iam::${local.prod_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSAdministratorAccess_746a31ddf0c5ed5c",
+          "arn:aws:iam::${local.prod_account_id}:assumed-role/AWSReservedSSO_AWSAdministratorAccess_746a31ddf0c5ed5c/aws+prod@${local.sso_domain}"
         ]
       },
       "Action": [

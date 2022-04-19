@@ -102,6 +102,17 @@ data "aws_iam_policy_document" "codepipeline" {
     ]
   }
 
+  dynamic "statement" {
+    for_each = var.enable_approval ? [1] : []
+    content {
+      effect = "Allow"
+      actions = ["sns:Publish"]
+      resources = [
+        var.approval_sns_arn
+      ]
+    }
+  }
+
 }
 
 resource "aws_iam_role_policy_attachment" "codepipeline" {

@@ -1,7 +1,8 @@
 // root bucket
 resource "aws_s3_bucket" "root_bucket" {
-  bucket = var.bucket_name
-  tags   = var.tags
+  bucket        = var.bucket_name
+  force_destroy = var.force_destroy
+  tags          = var.tags
 }
 
 resource "aws_s3_bucket_website_configuration" "website" {

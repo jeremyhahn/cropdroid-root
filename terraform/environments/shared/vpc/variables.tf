@@ -108,8 +108,8 @@ locals {
   stage_canonical_id  =  data.terraform_remote_state.stage_bootstrap.outputs.canonical_id
   stage_account_id    = data.terraform_remote_state.stage_bootstrap.outputs.account_id
 
-  # prod_canonical_id  =  data.terraform_remote_state.prod_bootstrap.outputs.canonical_id
-  # prod_account_id    = data.terraform_remote_state.prod_bootstrap.outputs.account_id
+  prod_canonical_id  =  data.terraform_remote_state.prod_bootstrap.outputs.canonical_id
+  prod_account_id    = data.terraform_remote_state.prod_bootstrap.outputs.account_id
 
   bucket_name   = "cropdroid-artifacts-shared"
   bucket_grants = [{
@@ -120,15 +120,14 @@ locals {
     type        = "CanonicalUser"
     permissions = "FULL_CONTROL"
     id          = local.stage_canonical_id
-  }/*, {
+  }, {
     type        = "CanonicalUser"
-    permissions = ["FULL_CONTROL"]
+    permissions = "FULL_CONTROL"
     id          = local.prod_canonical_id
-  }*/
-  ]
+  }]
   bucket_policy_principals = [
     local.shared_account_id,
-    local.stage_account_id
-    #local.prod_account_id
+    local.stage_account_id,
+    local.prod_account_id
   ]
 }

@@ -54,6 +54,18 @@ variable "codebuild_compute" {
   description = "A supported codebuild compute environment. https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html"
 }
 
+variable "enable_approval" {
+  type        = bool
+  description = "True to enable codepipeline approval step, false to deploy automatically."
+  default     = false
+}
+
+variable "approval_sns_arn" {
+  type        = string
+  description = "The SNS arn to send pipeline approvals"
+  default     = ""
+}
+
 variable "environment_variables" {
   type = list(object({
     name  = string

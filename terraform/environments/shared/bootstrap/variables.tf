@@ -28,4 +28,6 @@ locals {
   prod_account_id            = "640945925798"
   remotestate_bucket_name    = "terraform-remote-state-${local.account_id}"
   remotestate_dynamodb_table = "terraform-remote-state-locks"
+
+  infrastructure_alert_email = "mail@jeremyhahn.com"
 }

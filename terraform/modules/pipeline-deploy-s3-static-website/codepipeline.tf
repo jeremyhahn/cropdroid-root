@@ -29,6 +29,27 @@ resource "aws_codepipeline" "pipeline" {
     }
   }
 
+  dynamic "stage" {
+    for_each = var.enable_approval ? [1] : []
+
+    content {
+      name = "Approve"
+      action {
+        name      = "Approval"
+        category  = "Approval"
+        owner     = "AWS"
+        provider  = "Manual"
+        run_order = 2
+        version   = "1"
+
+        configuration = {
+          NotificationArn = var.approval_sns_arn
+          #CustomData = "${var.approve_comment}"
+        }
+      }
+    }
+  }
+
   stage {
     name = "Deploy"
     action {
@@ -45,7 +66,7 @@ resource "aws_codepipeline" "pipeline" {
       ]
       owner     = "AWS"
       provider  = "CodeBuild"
-      run_order = 1
+      run_order = var.enable_approval ? 2 : 3
       version   = 1
     }
   }

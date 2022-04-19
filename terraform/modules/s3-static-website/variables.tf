@@ -75,13 +75,31 @@ variable "alert_topic_arn" {
 variable "enable_health_checks" {
   description = "Turn Route 53 health checks on/off"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "enable_waf" {
   type        = bool
   description = "Turn Web Application Firewall (WAF) on/off"
   default     = false
+}
+
+variable "force_destroy" {
+  type        = bool
+  description = "Delete all objects in S3 bucket on delete"
+  default     = false
+}
+
+variable "enable_synthetics" {
+  type        = bool
+  description = "Enable / disable CloudWatch Synthetics (uptime canary)"
+  default     = false
+}
+
+variable "synthetics_timeout" {
+  type        = number
+  description = "Number of milliseconds to wait for page load before timing out"
+  default     = 30000
 }
 
 locals {

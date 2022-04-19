@@ -46,6 +46,10 @@ resource "aws_codecommit_repository" "tf_module_s3bucket" {
   repository_name = "tf-module-s3bucket"
 }
 
+resource "aws_codecommit_repository" "tf_module_s3_event_notification" {
+  repository_name = "tf-module-s3-event-notification"
+}
+
 resource "aws_codecommit_repository" "tf_module_s3_static_website" {
   repository_name = "tf-module-s3-static-website"
 }

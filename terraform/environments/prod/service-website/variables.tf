@@ -34,6 +34,13 @@ variable "enable_waf" {
   default     = true
 }
 
+variable "enable_approval" {
+  type        = bool
+  description = "Enable / disable CI/CD approval step"
+  default     = true
+}
+
+
 locals {
   external_dns_zone_id = data.terraform_remote_state.prod_vpc.outputs.external_dns_zone_id
   external_dns_name    = data.terraform_remote_state.prod_vpc.outputs.external_dns_name
@@ -42,7 +49,9 @@ locals {
     "www.${local.external_dns_name}"
   ]
 
-  sns_topic_arn = data.terraform_remote_state.prod_bootstrap.outputs.infrastructure_sns_topic
+  force_destroy = true
+
+  infra_sns_topic = data.terraform_remote_state.stage_bootstrap.outputs.infrastructure_sns_topic
 
   tags = data.terraform_remote_state.prod_bootstrap.outputs.tags
 }

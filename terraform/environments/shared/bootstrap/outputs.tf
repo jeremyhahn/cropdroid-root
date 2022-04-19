@@ -23,3 +23,7 @@ output "remote_state_dynamo_table" {
 # output "devops_role" {
 #   value = aws_iam_role.devops.arn
 # }
+
+output "infrastructure_sns_topic" {
+  value = aws_sns_topic.alert_email.arn
+}

@@ -1,3 +1,4 @@
+data "aws_region" "current" {}
 
 data "terraform_remote_state" "stage_bootstrap" {
   backend = "s3"

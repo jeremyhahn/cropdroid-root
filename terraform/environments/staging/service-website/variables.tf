@@ -34,6 +34,18 @@ variable "enable_waf" {
   default     = false
 }
 
+variable "enable_synthetics" {
+  type        = bool
+  description = "Enable / disable CloudWatch Synthetics (uptime canary)"
+  default     = false
+}
+
+variable "enable_approval" {
+  type        = bool
+  description = "Enable / disable CI/CD approval step"
+  default     = false
+}
+
 locals {
   external_dns_zone_id = data.terraform_remote_state.stage_vpc.outputs.external_dns_zone_id
   external_dns_name    = data.terraform_remote_state.stage_vpc.outputs.external_dns_name
@@ -42,7 +54,12 @@ locals {
     "www.${local.external_dns_name}"
   ]
 
-  sns_topic_arn = data.terraform_remote_state.stage_bootstrap.outputs.infrastructure_sns_topic
+  force_destroy = true
+
+  artifact_bucket = data.terraform_remote_state.shared_pipeline_website.outputs.artifact_bucket
+  artifact_name = "service-website.zip"
+
+  infra_sns_topic = data.terraform_remote_state.stage_bootstrap.outputs.infrastructure_sns_topic
 
   tags = data.terraform_remote_state.stage_bootstrap.outputs.tags
 }
