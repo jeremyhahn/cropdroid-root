@@ -6,3 +6,4 @@ devops/
 raspberry-pi/
 
 .terraform/
+**/.terraform.lock.hcl

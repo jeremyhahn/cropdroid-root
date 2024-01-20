@@ -9,6 +9,7 @@ module "vpc" {
   private_subnets            = var.private_subnets
   database_subnets           = var.database_subnets
   intra_subnets              = var.intra_subnets
+  enable_nat_gateway         = false
   single_nat_gateway         = true
   one_nat_gateway_per_az     = false
   internal_zone_name         = var.internal_zone_name

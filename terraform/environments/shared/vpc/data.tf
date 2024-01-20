@@ -9,13 +9,6 @@ data "terraform_remote_state" "shared_services" {
 }
 
 // TODO: day 2 support
-# data "terraform_remote_state" "stage_bootstrap" {
-#   backend = "local"
-#   config = {
-#     path = "../../staging/bootstrap/terraform.tfstate"
-#   }
-# }
-
 data "terraform_remote_state" "stage_bootstrap" {
   backend = "s3"
   config = {
@@ -35,11 +28,3 @@ data "terraform_remote_state" "prod_bootstrap" {
     profile = var.profile
   }
 }
-
-
-# data "terraform_remote_state" "prod_bootstrap" {
-#   backend = "local"
-#   config = {
-#     path = "../../prod/bootstrap/terraform.tfstate"
-#   }
-# }

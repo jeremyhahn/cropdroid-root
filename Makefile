@@ -20,11 +20,11 @@ CROPDROID_SRC           ?= src/go-cropdroid
 CROPDROID_DATASTORE     ?= memory
 
 APP                     := cropdroid
-APPTYPE									?= standalone
-ENV             				?= dev
+APPTYPE					?= standalone
+ENV             		?= dev
 TARGET_USER             ?= pi
 TARGET_HOST             ?= cropdroid1
-TARGET_ARCH							?= arm64
+TARGET_ARCH				?= arm64
 WEBSERVER_USER          ?= www-data
 
 HOSTNAME                ?= cropdroid1
@@ -35,7 +35,7 @@ WLAN_CIDR               ?= 192.168.100.131/24
 WLAN_ROUTERS            ?= 192.168.100.1
 WLAN_DNS                ?= 192.168.100.1
 WLAN_SSID               ?= MJ_5G
-WLAN_PSK                ?= Westland1
+WLAN_PSK                ?= Cropdroid1
 WLAN_KEY_MGMT           ?= WPA-PSK
 WLAN_COUNTRY            ?= US
 
@@ -75,7 +75,7 @@ DOCKER_NODE1_IP         ?= 172.18.0.10
 DOCKER_NODE2_IP         ?= 172.18.0.11
 DOCKER_NODE3_IP         ?= 172.18.0.12
 DOCKER_OS               ?= ubuntu
-DOCKER_OS_TAG		        ?= latest
+DOCKER_OS_TAG		    ?= latest
 DOCKER_IMAGE            ?= $(DOCKER_OS):$(DOCKER_OS_TAG)
 DOCKER_ALPINE_IMAGE     ?= alpine:latest
 DOCKER_GOLANG_IMAGE     ?= golang:buster
@@ -100,13 +100,13 @@ PACKER_BUILDER_UBUNTU64  ?= ubuntu-20.04.01-arm64
 PACKER_BUILDER           ?= $(PACKER_BUILDER_RASPIOS64)
 
 ANSIBLE_HOME             ?= $(DEVOPS_HOME)/ansible
-ANSIBLE_CROPDROID 		   ?= $(ANSIBLE_HOME)/roles/$(APP)
+ANSIBLE_CROPDROID 		 ?= $(ANSIBLE_HOME)/roles/$(APP)
 ANSIBLE_CROPDROID_FILES  ?= $(ANSIBLE_CROPDROID)/files
 ANSIBLE_FIRMWARE         ?= $(ANSIBLE_CROPDROID_FILES)/firmware
 #ANSIBLE_BOOTLOADER       ?= $(ANSIBLE_CROPDROID_FILES)/bootloaders
 
-IMAGE_NAME		           ?= $(HOSTNAME)-$(APPTYPE)-$(ENV)
-IMAGE_FILENAME           ?= $(IMAGE_NAME).img
+IMAGE_NAME		        ?= $(HOSTNAME)-$(APPTYPE)-$(ENV)
+IMAGE_FILENAME          ?= $(IMAGE_NAME).img
 
 RPI_KERNEL              ?= $(SOURCES)/qemu-rpi-kernel
 RPI_IMAGE_ARTIFACT      ?= $(IMAGES_HOME)/$(IMAGE_FILENAME)
@@ -124,7 +124,7 @@ API_AUTH_TYPE              ?= 0 # 0 = local auth, 1 = google auth
 #API_JWT_TOKEN             ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6MiwiZW1haWwiOiJtYWlsQGplcmVteWhhaG4uY29tIiwib3JnYW5pemF0aW9ucyI6Ilt7XCJpZFwiOjAsXCJuYW1lXCI6XCJcIixcImZhcm1zXCI6W3tcImlkXCI6MixcIm5hbWVcIjpcIkZpcnN0IFJvb21cIixcInJvbGVzXCI6bnVsbH1dLFwicm9sZXNcIjpbXCJhZG1pblwiXSxcImxpY2Vuc2VcIjpudWxsfV0iLCJleHAiOjE2NjQwNDI1NTIsImlhdCI6MTYzMjQ4NDk1MiwiaXNzIjoiY3JvcGRyb2lkIn0.LF06h59lh2JluA3dmk7ILCgAXxJHlpsD1GEt3mCEftkZr1rEJ-5IBXCFc2SgFZvZgQ5cKDQLibBUqfqhpinPydZf7YozYKFVzsH1W7dd0E6XUpSQ4WA2rdR03KS6P_fCS1KGxwkriFPhTxZ5y6TFSoV8RZR1NP7KYkzYPHD6m4f1G_-VmSg4QNIgT47lcgEQm4bmoR57QnVj0BWfGuuNVzAF8YCFCielg0uLmD3Ph4zl6ovmIm5g3jkGCwCavO02jT3Su-YaVO3AVW2e_-3WpRomCFbX8gagPI22zCEruLnormVxYXiFXTmQyRLF5uY0uEfAoDpdEIIv1J9lm7vzPw
 #API_JWT_TOKEN              ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6MSwiZW1haWwiOiJhZG1pbiIsIm9yZ2FuaXphdGlvbnMiOiJbe1wiaWRcIjowLFwibmFtZVwiOlwiXCIsXCJmYXJtc1wiOltdLFwicm9sZXNcIjpbXCJhZG1pblwiXSxcImxpY2Vuc2VcIjpudWxsfV0iLCJleHAiOjE2NjQwNTgzMjIsImlhdCI6MTYzMjUwMDcyMiwiaXNzIjoiY3JvcGRyb2lkIn0.qHCv86RMI228eL7WNumRG6pfnXw9QMLNH6xEmNHX2zewjmZU91praly6lVGLAb1Bcr5o9iUcYoT9AEOFfO-VbE-MTajpFrys_3eBPqe4LmzgCwpnrFMK-daL8dw5i6oRxelrV-7dPjfmmL_uBmKohSxlkU3Z9IXoayXR7KY_0c3NTTDbG4MxbmL1eRlQRSecVdPAqur9DbnWVjFL9kdYlF3GNq9uztQw2CnxezMX3ECESPPbKhrx2MnTiD9EIq_Ivj4kYdHrXYS6xh_H9T8v74W0Bsb4Wp-0jvMMZyTo0ZxLI48LcreZHOGlzhX4G_DGMeMtaYzYT0a0whn7muezWg
 # cluster token
-API_JWT_TOKEN              ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjAsInVpZCI6Njk3MzI0NjAyNjkyMzM3NjY1LCJlbWFpbCI6ImFkbWluIiwib3JnYW5pemF0aW9ucyI6Ilt7XCJpZFwiOjAsXCJuYW1lXCI6XCJcIixcImZhcm1zXCI6W10sXCJyb2xlc1wiOltcImFkbWluXCJdLFwibGljZW5zZVwiOm51bGx9XSIsImV4cCI6MTY2NDQzNDczOCwiaWF0IjoxNjMyODc3MTM4LCJpc3MiOiJjcm9wZHJvaWQifQ.POrzsNe9VNhJ31sX2-YSf3m5Flgwyo76nUgQ0vGLLpcQlfJ5hCzehsEg_5nhg87SuaQmSroZjZPEwPsTOLsCe7dVrKXwaRQj6mMm9sNcBw5BWp9f4pF3eEx5PBNvWlAkq6UYwtFw7RQ5aU6U21CaLyswdoy1jvuFFmzxuz2RWa-RGl3-a9Uzmc15CoruvCo-GcqgAcAW-DMPhhJ6uNbXaF9d3czsjsqzujBBL2rDJz80EmYn_jEktfbO8RD6xuKGH4mcq4m7DbrokD-_pY05jPsroXDbgw14mgeiHggTGLMo5SJDQJ8QHECTqp9YFS9hTXh_QnhyzCZk3y9sN1ADtw
+API_JWT_TOKEN              ?= eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjEsInVpZCI6ODg1NTM2Mjc2LCJlbWFpbCI6ImFkbWluIiwib3JnYW5pemF0aW9ucyI6IltdIiwiZmFybXMiOiJbe1wiaWRcIjoxMTMxNTY4MjYsXCJuYW1lXCI6XCJKQ3JvcFwiLFwicm9sZXNcIjpudWxsfV0iLCJleHAiOjE3MzcxNjE1NTMsImlhdCI6MTcwNTYwMzk1MywiaXNzIjoiY3JvcGRyb2lkIn0.VtGWxN1zEppk6y6dBwU-ReeXRsOT9BsK8Rfws73titype0t1kgNYBJ6SNALtSQgMzNBek6_3--zjR1GpZV_F-Au2TR-wXtGPe0E4XavEqpYmBiAOlNYdp5w_eq74KUIQJKmfHVTbJ-Gz-7lJxcvDFTyFUYwmNp51vlrklY9C9Oyc1ALttnKm4h-L_g4BM9ZvFD5ij4vW_c_xqqrZkmLKwM2VCUpM2_FKEjnyqEueseFkUqmszO0RiJfjmQlBDy7MQq2bW21n_BrvxfBMBcGKHchmqUCheFfUPwpiw0sKaXGZT0hZ8lV1rfT-xmsBwKHkIfOiz7ht2zIwSUJ30ILyuQ
 API_FARM_ID                ?= 1
 API_SYSTEM_ENDPOINT        ?= $(API_ENDPOINT)/system
 API_STATE_ENDPOINT         ?= $(API_ENDPOINT)/api/v1/farms/$(API_FARM_ID)/state
@@ -136,6 +136,8 @@ API_LOGIN_REFRESH_ENDPOINT ?= $(API_LOGIN_ENDPOINT)/refresh
 API_FARMTICKER_ENDPOINT    ?= $(API_WS_ENDPOINT)/api/v1/farmticker/$(API_FARM_ID)
 
 
+# Pebble DB
+PEBBLE_CLUSTER_ID          ?= 0
 
 default: minikube-start build-images
 
@@ -205,6 +207,7 @@ init:
 	-git clone git@github.com:jeremyhahn/cropdroid-room.git src/cropdroid-room
 	-git clone git@github.com:jeremyhahn/cropdroid-reservoir.git src/cropdroid-reservoir
 	-git clone git@github.com:jeremyhahn/cropdroid-doser.git src/cropdroid-doser
+	-git clone git@github.com:jeremyhahn/cropdroid-irrigation.git src/cropdroid-irrigation
 	-git clone git@github.com:jeremyhahn/cropdroid-android.git src/cropdroid-android
 	-mkdir terraform
 	-git clone git@github.com:cropdroid/tf-env-root.git terraform/tf-env-root
@@ -214,7 +217,7 @@ init:
 certs:
 	mkdir -p keys/
 	openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -keyout keys/key.pem -out keys/cert.pem \
-          -subj "/C=US/ST=MA/L=Boston/O=Automate The Things, LLC/CN=localhost"
+          -subj "/C=US/ST=FL/L=West Palm Beach/O=Automate The Things, LLC/CN=localhost"
 	openssl genrsa -out keys/rsa.key 2048
 	openssl rsa -in keys/rsa.key -pubout -out keys/rsa.pub
 
@@ -904,6 +907,12 @@ ansible-cluster:
 	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER2) make ansible
 	CROPDROID_DATASTORE=cockroach APPTYPE=cluster TARGET_USER=ubuntu TARGET_HOST=$(CLUSTER_PEER3) make ansible
 
+ansible-public-html:
+	cp -R $(CROPDROID_SRC)/public_html $(ANSIBLE_CROPDROID_FILES)
+
+ansible-keys:
+	cp -R $(CROPDROID_SRC)/keys $(ANSIBLE_CROPDROID_FILES)
+
 # ansible-clean:
 # 	rm -rf $(ANSIBLE_CROPDROID_FILES)/*
 
@@ -1307,27 +1316,34 @@ local-cropdroid-cluster-debug: build-cluster-pebble-debug
 local-cluster-debug: local-clean \
 	local-cropdroid-cluster-compile
 
+	#$(MAKE) -f $(CROPDROID_SRC)/Makefile certs
+	mkdir keys/ && cp -R $(CROPDROID_SRC)/keys .
 	cp -R $(CROPDROID_SRC)/public_html .
-	cp -R $(CROPDROID_SRC)/keys .
 	$(SCRIPTS_HOME)/start-cluster-debug.sh
 
+local-sqlite-init:
+	mkdir db
+	$(CROPDROID_SRC)/$(APP) config --debug --init --datastore sqlite
+
 local-standalone:
-	./$(APP) standalone --debug --ssl=false --port 8091
+	$(CROPDROID_SRC)/$(APP) standalone --debug --ssl=false --port 8091
 
 local-standalone-sqlite:
-	./$(APP) standalone --debug --ssl=false --port 8091 --datastore sqlite
+	$(CROPDROID_SRC)/$(APP) standalone --debug --ssl=false --port 8091 --datastore sqlite
 
 local-standalone-cockroach:
-	./$(APP) standalone --debug --ssl=false --port 8091 --datastore cockroach
+	$(CROPDROID_SRC)/$(APP) standalone --debug --ssl=false --port 8091 --datastore cockroach
 
 local-clean:
 	-killall -9 cockroach
 	-killall -9 $(APP)*
 	-tmux kill-server
 	-rm -rf db/
+	-rm -rf keys/
 	-rm -rf public_html/
 	-rm -rf example-data/
 	-rm -rf pebbledb-data/
+	-rm -rf $(CROPDROID_SRC)/db/
 	-rm -rf $(CROPDROID_SRC)/example-data/
 	-rm -rf $(CROPDROID_SRC)/pebbledb-data/
 	-sudo rm -rf /var/log/cropdroid/cluster/*
@@ -1340,6 +1356,14 @@ local-redeploy-cropdroid-cluster-pebble: local-clean \
 	#tmux kill-server
 	#rm -rf db/
 	#$(MAKE) local-cropdroid-cluster-pebble
+
+local-pebblels:
+	mkdir db/cluster/tmp$(PEBBLE_CLUSTER_ID)/
+	cp -R db/cluster/$(PEBBLE_CLUSTER_ID)_1/*/* db/cluster/tmp$(PEBBLE_CLUSTER_ID)
+	$(CROPDROID_SRC)/cropdroid pebble \
+		--data-dir db/cluster/tmp$(PEBBLE_CLUSTER_ID) ls
+	rm -rf db/cluster/tmp$(PEBBLE_CLUSTER_ID)
+
 
 
 
@@ -1365,19 +1389,19 @@ ab-all: ab-system \
 
 # Websocket Test
 websocket-test:
-	@echo '"{\"id\":\"$(API_UID)}\"}'
-	$(GOBIN)/ws $(API_FARMTICKER_ENDPOINT)
+#	@echo '{\"id\":\"$(API_UID)\"}'
+#	$(GOBIN)/ws $(API_FARMTICKER_ENDPOINT)
 
-	# curl -vvv --include \
-    #  --no-buffer \
-    #  --header "Connection: Upgrade" \
-    #  --header "Upgrade: websocket" \
-    #  --header "Host: $(LOCAL_ADDRESS)" \
-    #  --header "Origin: $(API_ENDPOINT)" \
-	#  --header "Authorization: $(API_JWT_TOKEN)" \
-    #  --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
-    #  --header "Sec-WebSocket-Version: 13" \
-    #  $(API_FARMTICKER_ENDPOINT)
+	curl -vvv --include \
+      --no-buffer \
+      --header "Connection: Upgrade" \
+      --header "Upgrade: websocket" \
+      --header "Host: $(LOCAL_ADDRESS)" \
+      --header "Origin: $(API_ENDPOINT)" \
+	  --header "Authorization: $(API_JWT_TOKEN)" \
+      --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
+      --header "Sec-WebSocket-Version: 13" \
+      $(API_FARMTICKER_ENDPOINT)
 
 rest-provision:
 	curl -s -X POST \
