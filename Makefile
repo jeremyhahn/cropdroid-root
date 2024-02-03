@@ -1364,7 +1364,12 @@ local-pebblels:
 		--data-dir db/cluster/tmp$(PEBBLE_CLUSTER_ID) ls
 	rm -rf db/cluster/tmp$(PEBBLE_CLUSTER_ID)
 
-
+local-pebblels-testdata:
+	mkdir $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID)/
+	cp -R $(CROPDROID_SRC)/cluster/test-data/$(PEBBLE_CLUSTER_ID)_1/*/* $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID)
+	$(CROPDROID_SRC)/cropdroid pebble \
+		--data-dir $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID) ls
+	rm -rf $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID)
 
 
 # Apache Bench Performance Testing
@@ -1389,19 +1394,19 @@ ab-all: ab-system \
 
 # Websocket Test
 websocket-test:
-#	@echo '{\"id\":\"$(API_UID)\"}'
-#	$(GOBIN)/ws $(API_FARMTICKER_ENDPOINT)
+	@echo '{\"id\":\"$(API_UID)\"}'
+	$(GOBIN)/ws $(API_FARMTICKER_ENDPOINT)
 
-	curl -vvv --include \
-      --no-buffer \
-      --header "Connection: Upgrade" \
-      --header "Upgrade: websocket" \
-      --header "Host: $(LOCAL_ADDRESS)" \
-      --header "Origin: $(API_ENDPOINT)" \
-	  --header "Authorization: $(API_JWT_TOKEN)" \
-      --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
-      --header "Sec-WebSocket-Version: 13" \
-      $(API_FARMTICKER_ENDPOINT)
+#	curl -vvv --include \
+#      --no-buffer \
+#      --header "Connection: Upgrade" \
+#      --header "Upgrade: websocket" \
+#      --header "Host: $(LOCAL_ADDRESS)" \
+#      --header "Origin: $(API_ENDPOINT)" \
+#	  --header "Authorization: $(API_JWT_TOKEN)" \
+#      --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
+#      --header "Sec-WebSocket-Version: 13" \
+#      $(API_FARMTICKER_ENDPOINT)
 
 rest-provision:
 	curl -s -X POST \
