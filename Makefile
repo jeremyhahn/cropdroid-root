@@ -1271,6 +1271,10 @@ local-init-log:
 	sudo touch /var/log/cropdroid/cluster/node-3.log && sudo chmod 777 /var/log/cropdroid/cluster/node-3.log
 	sudo chown -R $(USER) /var/log/cropdroid
 
+local-init-standalone:
+	cd $(CROPDROID_SRC) && make build-standalone-debug
+	mkdir db
+
 # local-init-cluster:
 # 	set -e ; \
 # 	FILES="/var/log/$(APP)-1.log /var/log/$(APP)-2.log /var/log/$(APP)-3.log" ; \
@@ -1314,24 +1318,47 @@ local-cropdroid-cluster-debug: build-cluster-pebble-debug
 # 	local-cropdroid-cluster-pebble
 
 local-cluster-debug: local-clean \
-	local-cropdroid-cluster-compile
+	local-cropdroid-cluster-compile \
+	local-keys-and-public-html
 
 	#$(MAKE) -f $(CROPDROID_SRC)/Makefile certs
-	mkdir keys/ && cp -R $(CROPDROID_SRC)/keys .
-	cp -R $(CROPDROID_SRC)/public_html .
 	$(SCRIPTS_HOME)/start-cluster-debug.sh
 
 local-sqlite-init:
 	mkdir db
 	$(CROPDROID_SRC)/$(APP) config --debug --init --datastore sqlite
 
-local-standalone:
+local-keys-and-public-html:
+	mkdir keys/ && cp -R $(CROPDROID_SRC)/keys .
+	cp -R $(CROPDROID_SRC)/public_html .
+
+local-standalone: local-keys-and-public-html
+	cd $(CROPDROID_SRC) && make build-standalone-debug
+	$(CROPDROID_SRC)/$(APP) standalone --debug --init --ssl=false --port 8091
+
+local-standalone-memory: local-clean \
+	local-init-log \
+	local-keys-and-public-html \
+	local-init-standalone
+
 	$(CROPDROID_SRC)/$(APP) standalone --debug --ssl=false --port 8091
 
-local-standalone-sqlite:
+local-standalone-sqlite: local-clean \
+	local-init-log \
+	local-keys-and-public-html \
+	local-init-standalone
+
 	$(CROPDROID_SRC)/$(APP) standalone --debug --ssl=false --port 8091 --datastore sqlite
 
+local-standalone-sqlite-with-farm: local-clean \
+	local-init-log \
+	local-keys-and-public-html \
+	local-init-standalone
+
+	$(CROPDROID_SRC)/$(APP) standalone --debug --init --ssl=false --port 8091 --datastore sqlite --enable-default-farm=true
+
 local-standalone-cockroach:
+	cd $(CROPDROID_SRC) && make build-standalone-debug
 	$(CROPDROID_SRC)/$(APP) standalone --debug --ssl=false --port 8091 --datastore cockroach
 
 local-clean:
@@ -1346,7 +1373,7 @@ local-clean:
 	-rm -rf $(CROPDROID_SRC)/db/
 	-rm -rf $(CROPDROID_SRC)/example-data/
 	-rm -rf $(CROPDROID_SRC)/pebbledb-data/
-	-sudo rm -rf /var/log/cropdroid/cluster/*
+	-sudo rm -rf /var/log/cropdroid*
 	-rm -rf $(CROPDROID_SRC)/db/cluster/*
 
 local-redeploy-cropdroid-cluster-pebble: local-clean \
