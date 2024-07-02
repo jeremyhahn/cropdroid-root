@@ -94,8 +94,8 @@ else
 	DOCKER_BUILD_TAG_PREFIX ?= $(DOCKER_USERNAME)/
 endif
 
-PACKER_FILE              ?= raspios64-2021-05-07-dev.json
-PACKER_BUILDER_RASPIOS64 ?= 2021-05-07-raspios-buster-arm64
+PACKER_FILE              ?= 2024-03-15-raspios-bookworm-arm64.json
+PACKER_BUILDER_RASPIOS64 ?= 2024-03-15-raspios-bookworm-arm64
 PACKER_BUILDER_UBUNTU64  ?= ubuntu-20.04.01-arm64
 PACKER_BUILDER           ?= $(PACKER_BUILDER_RASPIOS64)
 
@@ -214,12 +214,12 @@ init:
 	
 
 
-certs:
-	mkdir -p keys/
-	openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -keyout keys/key.pem -out keys/cert.pem \
-          -subj "/C=US/ST=FL/L=West Palm Beach/O=Automate The Things, LLC/CN=localhost"
-	openssl genrsa -out keys/rsa.key 2048
-	openssl rsa -in keys/rsa.key -pubout -out keys/rsa.pub
+# certs:
+# 	mkdir -p keys/
+# 	openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -keyout keys/key.pem -out keys/cert.pem \
+#           -subj "/C=US/ST=FL/L=West Palm Beach/O=Automate The Things, LLC/CN=localhost"
+# 	openssl genrsa -out keys/rsa.key 2048
+# 	openssl rsa -in keys/rsa.key -pubout -out keys/rsa.pub
 
 
 # ------------- #
@@ -735,11 +735,11 @@ k3s-delete-cropdroid: k3s-set-context
 
 
 
-cockroach-sql:
-	kubectl exec -it cockroachdb-2 -- ./cockroach sql --certs-dir cockroach-certs
+# cockroach-sql:
+# 	kubectl exec -it cockroachdb-2 -- ./cockroach sql --certs-dir cockroach-certs
 
-cockroach-admin-setup:
-	CREATE USER root WITH PASSWORD 'cropdroid';
+# cockroach-admin-setup:
+# 	CREATE USER root WITH PASSWORD 'cropdroid';
 
 
 
@@ -1302,6 +1302,9 @@ local-cropdroid-cluster-compile:
 	cd $(CROPDROID_SRC) && \
 		make build-cluster-pebble-debug
 
+local-cropdroid-copy:
+	cp $(CROPDROID_SRC)/$(APP) .
+
 local-cropdroid-cluster-pebble: local-cockroach-init \
 	local-cropdroid-cluster-compile
 
@@ -1319,6 +1322,7 @@ local-cropdroid-cluster-debug: build-cluster-pebble-debug
 
 local-cluster-debug: local-clean \
 	local-cropdroid-cluster-compile \
+	local-cropdroid-copy \
 	local-keys-and-public-html
 
 	#$(MAKE) -f $(CROPDROID_SRC)/Makefile certs
@@ -1384,20 +1388,27 @@ local-redeploy-cropdroid-cluster-pebble: local-clean \
 	#rm -rf db/
 	#$(MAKE) local-cropdroid-cluster-pebble
 
+local-pebblels-debug:
+	mkdir -p db/cluster/tmp$(PEBBLE_CLUSTER_ID)/
+	cp -R $(CROPDROID_SRC)/db/cluster/$(PEBBLE_CLUSTER_ID)_3/*/* db/cluster/tmp$(PEBBLE_CLUSTER_ID)
+	$(CROPDROID_SRC)/cropdroid pebble \
+		--data-dir db/cluster/tmp$(PEBBLE_CLUSTER_ID) ls
+	rm -rf db/cluster/tmp$(PEBBLE_CLUSTER_ID)
+
 local-pebblels:
-	mkdir db/cluster/tmp$(PEBBLE_CLUSTER_ID)/
+	mkdir -p db/cluster/tmp$(PEBBLE_CLUSTER_ID)/
 	cp -R db/cluster/$(PEBBLE_CLUSTER_ID)_1/*/* db/cluster/tmp$(PEBBLE_CLUSTER_ID)
 	$(CROPDROID_SRC)/cropdroid pebble \
 		--data-dir db/cluster/tmp$(PEBBLE_CLUSTER_ID) ls
 	rm -rf db/cluster/tmp$(PEBBLE_CLUSTER_ID)
 
 local-pebblels-testdata:
-	mkdir $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID)/
-	cp -R $(CROPDROID_SRC)/cluster/test-data/$(PEBBLE_CLUSTER_ID)_1/*/* $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID)
+	-rm -rf $(CROPDROID_SRC)/datastore/raft/test-data/tmp$(PEBBLE_CLUSTER_ID)
+	mkdir $(CROPDROID_SRC)/datastore/raft/test-data/tmp$(PEBBLE_CLUSTER_ID)/
+	cp -R $(CROPDROID_SRC)/datastore/raft/test-data/$(PEBBLE_CLUSTER_ID)_1/*/* $(CROPDROID_SRC)/datastore/raft/test-data/tmp$(PEBBLE_CLUSTER_ID)
 	$(CROPDROID_SRC)/cropdroid pebble \
-		--data-dir $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID) ls
-	rm -rf $(CROPDROID_SRC)/cluster/test-data/tmp$(PEBBLE_CLUSTER_ID)
-
+		--data-dir $(CROPDROID_SRC)/datastore/raft/test-data/tmp$(PEBBLE_CLUSTER_ID) ls
+	rm -rf $(CROPDROID_SRC)/datastore/raft/test-data/tmp$(PEBBLE_CLUSTER_ID)
 
 # Apache Bench Performance Testing
 ab-system:
