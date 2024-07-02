@@ -1,0 +1,13 @@
+src/
+example-data/
+
+src/
+devops/
+raspberry-pi/
+
+.terraform/
+**/.terraform.lock.hcl
+
+db/
+keys/
+public_html/
